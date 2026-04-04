@@ -1,6 +1,6 @@
 import { CollapseIcon, CopyIcon, ExpandIcon } from "./Icons";
 
-type Tab = "tree" | "raw" | "minify" | "jq";
+type Tab = "tree" | "raw" | "minify" | "jq" | "ts";
 
 interface TopBarProps {
 	tab: Tab;
@@ -42,6 +42,13 @@ export function TopBar({
 					onClick={() => onTabChange("minify")}
 				>
 					Minify
+				</button>
+				<button
+					type="button"
+					className={`tab${tab === "ts" ? " on" : ""}`}
+					onClick={() => onTabChange("ts")}
+				>
+					TS
 				</button>
 			</div>
 			<div className="sep" />

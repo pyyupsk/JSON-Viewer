@@ -11,8 +11,10 @@ import { TreeView } from "./components/TreeView";
 import { flattenData, rowSearchText } from "./flatten";
 import { jq } from "./jq";
 import "./style.css";
+import { TypeScriptView } from "./components/TypeScriptView";
+import { nameFromUrl } from "./typescript";
 
-type Tab = "tree" | "raw" | "minify" | "jq";
+type Tab = "tree" | "raw" | "minify" | "jq" | "ts";
 
 interface AppProps {
 	readonly rawJson: string;
@@ -68,6 +70,7 @@ export function App({ rawJson }: AppProps) {
 		[data, rawJson],
 	);
 	const sizeKb = (rawJson.length / 1024).toFixed(1);
+	const tsName = useMemo(() => nameFromUrl(window.location.pathname), []);
 
 	// ── Handlers ── (showToast declared early; used in keyboard shortcut effect below) ──
 
@@ -229,6 +232,7 @@ export function App({ rawJson }: AppProps) {
 		}
 		if (tab === "raw") return <RawView content={rawStr} />;
 		if (tab === "minify") return <MinifyView data={data} />;
+		if (tab === "ts") return <TypeScriptView data={data} name={tsName} />;
 		if (showJqResult) return <JqResultView result={jqResult ?? ""} />;
 		return (
 			<TreeView
