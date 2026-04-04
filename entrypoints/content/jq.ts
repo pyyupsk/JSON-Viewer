@@ -67,18 +67,17 @@ function evalFromEntries(data: unknown): Record<string, unknown> {
 
 function evalAdd(data: unknown): unknown {
 	if (!Array.isArray(data)) return null;
-	return data.reduce(
-		(a: unknown, b: unknown) => {
-			if (typeof a === "number" && typeof b === "number") return a + b;
-			if (typeof a === "string") return a + toStr(b);
-			if (Array.isArray(a) && Array.isArray(b))
-				return (a as unknown[]).concat(b as unknown[]);
-			if (typeof a === "object" && a && typeof b === "object" && b)
-				return Object.assign(a, b);
-			return b;
-		},
-		(data as unknown[])[0] ?? null,
-	);
+	if (data.length === 0) return null;
+	const [first, ...rest] = data as unknown[];
+	return rest.reduce((a: unknown, b: unknown) => {
+		if (typeof a === "number" && typeof b === "number") return a + b;
+		if (typeof a === "string") return a + toStr(b);
+		if (Array.isArray(a) && Array.isArray(b))
+			return (a as unknown[]).concat(b as unknown[]);
+		if (typeof a === "object" && a && typeof b === "object" && b)
+			return Object.assign(a, b);
+		return b;
+	}, first);
 }
 
 function evalRecurse(data: unknown): unknown[] {
