@@ -5,4 +5,7 @@ export default defineConfig({
   manifest: {
     permissions: ['clipboardWrite'],
   },
+  runner: {
+    startUrls: ['https://jsonplaceholder.typicode.com/todos'],
+  },
 });
