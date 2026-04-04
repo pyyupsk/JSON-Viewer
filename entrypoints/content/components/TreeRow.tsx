@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Row } from '../flatten';
+import { CollapseNodeIcon, CopiedIcon, CopyIcon, ExpandNodeIcon } from './Icons';
 
 interface TreeRowProps {
   row: Row;
@@ -57,7 +58,7 @@ export function TreeRow({
       </div>
       {row.kind !== 'close' && (
         <button className={`copy-btn${copied ? ' ok' : ''}`} onClick={handleCopy}>
-          {copied ? '✓' : 'copy'}
+          {copied ? CopiedIcon : CopyIcon}
         </button>
       )}
     </div>
@@ -87,7 +88,7 @@ function OpenContent({
           onToggle(row.path);
         }}
       >
-        {row.collapsed ? '+' : '−'}
+        {row.collapsed ? ExpandNodeIcon : CollapseNodeIcon}
       </span>
       {row.key !== null && (
         <>

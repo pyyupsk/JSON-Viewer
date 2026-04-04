@@ -1,3 +1,5 @@
+import { InvalidIcon, ValidIcon } from './Icons';
+
 interface BottomBarProps {
   valid: boolean;
   sizeKb: string;
@@ -8,7 +10,9 @@ interface BottomBarProps {
 export function BottomBar({ valid, sizeKb, lineCount, selPath }: BottomBarProps) {
   return (
     <div className="bottombar">
-      <span className={valid ? 'bb-ok' : 'bb-err'}>{valid ? '● valid' : '✗ invalid JSON'}</span>
+      <span className={valid ? 'bb-ok' : 'bb-err'}>
+        {valid ? `${ValidIcon} valid` : `${InvalidIcon} invalid JSON`}
+      </span>
       <span>{sizeKb} KB</span>
       <span>{lineCount} lines</span>
       <div className="bb-right">

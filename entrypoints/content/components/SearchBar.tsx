@@ -1,3 +1,5 @@
+import { NextIcon, PrevIcon, SearchIcon } from './Icons';
+
 interface SearchBarProps {
   query: string;
   caseSen: boolean;
@@ -25,10 +27,7 @@ export function SearchBar({
 
   return (
     <div className="searchbar">
-      <svg className="search-icon" width="13" height="13" viewBox="0 0 13 13" fill="none">
-        <circle cx="5.5" cy="5.5" r="4" stroke="#555" strokeWidth="1.2" />
-        <line x1="8.9" y1="8.9" x2="12" y2="12" stroke="#555" strokeWidth="1.2" strokeLinecap="round" />
-      </svg>
+      <SearchIcon />
       <input
         className="search-input"
         placeholder="Search keys and values…"
@@ -42,10 +41,10 @@ export function SearchBar({
       <span className="search-meta">{meta}</span>
       <div className="search-nav">
         <button className="search-nav-btn" onClick={() => onStepMatch(-1)} title="Previous">
-          ▲
+          {PrevIcon}
         </button>
         <button className="search-nav-btn" onClick={() => onStepMatch(1)} title="Next">
-          ▼
+          {NextIcon}
         </button>
       </div>
       <button className={`case-btn${caseSen ? ' on' : ''}`} onClick={onCaseSenToggle} title="Case sensitive">

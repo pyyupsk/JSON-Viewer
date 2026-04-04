@@ -5,7 +5,7 @@ export default defineConfig({
   manifest: {
     permissions: ['clipboardWrite'],
   },
-  runner: {
+  webExt: {
     startUrls: ['https://jsonplaceholder.typicode.com/todos'],
   },
 });

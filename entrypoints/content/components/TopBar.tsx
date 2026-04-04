@@ -1,3 +1,5 @@
+import { CollapseIcon, CopyIcon, ExpandIcon } from './Icons';
+
 type Tab = 'tree' | 'raw' | 'minify' | 'jq';
 
 interface TopBarProps {
@@ -34,14 +36,14 @@ export function TopBar({ tab, onTabChange, onCollapseAll, onExpandAll, onCopyAll
       </button>
       <div className="spacer" />
       <button className="top-action" onClick={onCollapseAll}>
-        ⊟ Collapse
+        {CollapseIcon} Collapse
       </button>
       <button className="top-action" onClick={onExpandAll}>
-        ⊞ Expand
+        {ExpandIcon} Expand
       </button>
       <div className="sep" />
       <button className="top-action primary" onClick={onCopyAll}>
-        ⎘ Copy
+        {CopyIcon} Copy
       </button>
     </div>
   );

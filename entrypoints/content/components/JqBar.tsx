@@ -1,3 +1,5 @@
+import { CopiedIcon, InvalidIcon, RunIcon } from './Icons';
+
 interface JqBarProps {
   expr: string;
   result: string | null;
@@ -25,11 +27,11 @@ export function JqBar({ expr, result, error, onExprChange, onRun, onEscape }: Jq
       />
       {hasStatus && (
         <span className={`jq-status ${error ? 'err' : 'ok'}`}>
-          {error ? `✗ ${error}` : '✓ ok'}
+          {error ? `${InvalidIcon} ${error}` : `${CopiedIcon} ok`}
         </span>
       )}
       <button className="jq-run" onClick={onRun}>
-        ▶ Run
+        {RunIcon} Run
       </button>
     </div>
   );
