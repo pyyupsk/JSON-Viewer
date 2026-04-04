@@ -1,20 +1,15 @@
 import ReactDOM from 'react-dom/client';
-import type { Root } from 'react-dom/client';
 import { App } from './App';
+import './style.css';
 
 async function detectJson(): Promise<string | null> {
-  // Fast path — explicit content type
   if (document.contentType === 'application/json') return document.body.innerText;
 
-  // Only sniff text/plain and text/html fallbacks
   if (document.contentType !== 'text/plain' && document.contentType !== 'text/html') return null;
 
   const raw = document.body?.innerText ?? '';
-
-  // Bail early on large pages before attempting parse
   if (raw.length > 5_000_000) return null;
 
-  // Quick structural check before parsing
   const trimmed = raw.trimStart();
   if (trimmed[0] !== '{' && trimmed[0] !== '[') return null;
 
@@ -28,38 +23,21 @@ async function detectJson(): Promise<string | null> {
 
 export default defineContentScript({
   matches: ['*://*/*'],
-  cssInjectionMode: 'ui',
+  cssInjectionMode: 'manifest',
 
-  async main(ctx) {
+  async main() {
     const raw = await detectJson();
     if (!raw) return;
 
-    // Hide original content without destroying it
-    const pre = document.body.querySelector('pre');
-    if (pre) {
-      pre.style.display = 'none';
-    } else {
-      document.body.style.visibility = 'hidden';
-    }
+    // Take over the page — remove all existing content and mount our viewer
+    document.documentElement.style.cssText = 'height:100%;';
+    document.body.replaceChildren();
+    document.body.style.cssText = 'margin:0;padding:0;height:100%;overflow:hidden;';
 
-    const ui = await createShadowRootUi(ctx, {
-      name: 'json-viewer',
-      position: 'inline',
-      anchor: 'body',
-      onMount(container: HTMLElement): Root {
-        // Make the shadow host full-viewport so the viewer covers the page edge-to-edge
-        const host = (container.getRootNode() as ShadowRoot).host as HTMLElement;
-        host.style.cssText = 'position:fixed;inset:0;z-index:2147483647;';
+    const container = document.createElement('div');
+    container.style.cssText = 'height:100%;';
+    document.body.appendChild(container);
 
-        const root = ReactDOM.createRoot(container);
-        root.render(<App rawJson={raw} />);
-        return root;
-      },
-      onRemove(root: Root | undefined) {
-        root?.unmount();
-      },
-    });
-
-    ui.mount();
+    ReactDOM.createRoot(container).render(<App rawJson={raw} />);
   },
 });
