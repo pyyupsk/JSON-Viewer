@@ -13,48 +13,22 @@ A browser extension that beautifully formats and displays JSON responses directl
 - **Keyboard shortcuts** — `Ctrl/Cmd+F` to focus search, `Ctrl/Cmd+Shift+C` to copy
 - **Status bar** — shows JSON validity, file size, row count, and selected path
 
-## Getting Started
+## Installation
 
-### Prerequisites
+### Chrome
 
-- [Bun](https://bun.sh)
+1. Go to the [latest release](https://github.com/pyyupsk/JSON-Viewer/releases/latest) and download `json-viewer-*-chrome.zip`
+2. Unzip the downloaded file
+3. In Chrome, go to `chrome://extensions` and turn on **Developer mode** (top-right toggle)
+4. Click **Load unpacked** and select the unzipped folder
 
-### Install
+### Firefox
 
-```bash
-bun install
-```
+1. Go to the [latest release](https://github.com/pyyupsk/JSON-Viewer/releases/latest) and download `json-viewer-*-firefox.zip`
+2. In Firefox, go to `about:debugging#/runtime/this-firefox`
+3. Click **Load Temporary Add-on** and select the downloaded zip file
 
-### Development
-
-```bash
-bun dev          # Chrome
-bun dev:firefox  # Firefox
-```
-
-### Build
-
-```bash
-bun run build          # Chrome
-bun run build:firefox  # Firefox
-```
-
-### Test
-
-```bash
-bun run test              # Unit tests
-bun run test:e2e          # E2E tests
-bun run coverage:all      # Full coverage report
-```
-
-## Tech Stack
-
-- [WXT](https://wxt.dev) — browser extension framework
-- [React 19](https://react.dev) — UI
-- [TypeScript](https://www.typescriptlang.org) — type safety
-- [Biome](https://biomejs.dev) — linting and formatting
-- [Vitest](https://vitest.dev) — unit testing
-- [Playwright](https://playwright.dev) — E2E testing
+> **Note:** The Firefox extension is temporary and will be removed when the browser is closed. A permanently installable version is planned.
 
 ## Contributing
 
@@ -62,4 +36,4 @@ Bug reports and feature requests are welcome via [GitHub Issues](https://github.
 
 ## License
 
-MIT © [Pongsakorn Thipayanate](https://github.com/pyyupsk)
+MIT © [pyyupsk](https://github.com/pyyupsk)
