@@ -15,7 +15,7 @@ import "./style.css";
 type Tab = "tree" | "raw" | "minify" | "jq";
 
 interface AppProps {
-	rawJson: string;
+	readonly rawJson: string;
 }
 
 export function App({ rawJson }: AppProps) {
@@ -43,7 +43,7 @@ export function App({ rawJson }: AppProps) {
 
 	// ── Derived ────────────────────────────────────────────────────────────────
 	const rows = useMemo(
-		() => (data !== null ? flattenData(data, collapsed) : []),
+		() => (data === null ? [] : flattenData(data, collapsed)),
 		[data, collapsed],
 	);
 
@@ -76,6 +76,15 @@ export function App({ rawJson }: AppProps) {
 		if (toastTimer.current) clearTimeout(toastTimer.current);
 		toastTimer.current = setTimeout(() => setToast(null), 1800);
 	}, []);
+
+	const getSelectedText = useCallback(() => {
+		if (!selPath) return rawStr;
+		const row = rows.find((r) => r.path === selPath);
+		if (!row) return rawStr;
+		if (row.kind === "open") return JSON.stringify(row.value, null, 2);
+		if (row.kind === "prim") return String(row.value);
+		return rawStr;
+	}, [selPath, rows, rawStr]);
 
 	// ── Effects ────────────────────────────────────────────────────────────────
 
@@ -114,23 +123,13 @@ export function App({ rawJson }: AppProps) {
 			// Ctrl/Cmd+Shift+C → copy selected node or full JSON
 			if (mod && e.shiftKey && e.key === "C") {
 				e.preventDefault();
-				const text = selPath
-					? (() => {
-							const row = rows.find((r) => r.path === selPath);
-							if (!row) return rawStr;
-							if (row.kind === "open")
-								return JSON.stringify(row.value, null, 2);
-							if (row.kind === "prim") return String(row.value);
-							return rawStr;
-						})()
-					: rawStr;
-				navigator.clipboard.writeText(text).catch(() => {});
+				navigator.clipboard.writeText(getSelectedText()).catch(() => {});
 				showToast("Copied to clipboard");
 			}
 		};
-		window.addEventListener("keydown", handler);
-		return () => window.removeEventListener("keydown", handler);
-	}, [tab, selPath, rows, rawStr, showToast]);
+		globalThis.addEventListener("keydown", handler);
+		return () => globalThis.removeEventListener("keydown", handler);
+	}, [tab, getSelectedText, showToast]);
 
 	// ── Remaining handlers ────────────────────────────────────────────────────
 
@@ -175,9 +174,9 @@ export function App({ rawJson }: AppProps) {
 
 	const handleCopyVal = useCallback((val: unknown) => {
 		const text =
-			typeof val === "object" && val !== null
+			val !== null && typeof val === "object"
 				? JSON.stringify(val, null, 2)
-				: String(val);
+				: String(val as string | number | boolean | null | undefined);
 		navigator.clipboard.writeText(text).catch(() => {});
 	}, []);
 
@@ -217,6 +216,33 @@ export function App({ rawJson }: AppProps) {
 
 	const showJqResult = tab === "jq" && jqResult !== null;
 
+	function renderContent() {
+		if (parseError) {
+			return (
+				<textarea
+					className="raw-area"
+					readOnly
+					value={rawJson}
+					spellCheck={false}
+				/>
+			);
+		}
+		if (tab === "raw") return <RawView content={rawStr} />;
+		if (tab === "minify") return <MinifyView data={data} />;
+		if (showJqResult) return <JqResultView result={jqResult ?? ""} />;
+		return (
+			<TreeView
+				rows={rows}
+				selPath={selPath}
+				matchSet={matchSet}
+				focusPath={focusPath}
+				onToggle={handleToggle}
+				onSelect={setSelPath}
+				onCopy={handleCopyVal}
+			/>
+		);
+	}
+
 	return (
 		<div className="app">
 			<TopBar
@@ -227,7 +253,16 @@ export function App({ rawJson }: AppProps) {
 				onCopyAll={handleCopyAll}
 			/>
 
-			{tab !== "jq" ? (
+			{tab === "jq" ? (
+				<JqBar
+					expr={jqExpr}
+					result={jqResult}
+					error={jqError}
+					onExprChange={setJqExpr}
+					onRun={handleJqEval}
+					onEscape={handleJqEscape}
+				/>
+			) : (
 				<SearchBar
 					query={searchQuery}
 					caseSen={caseSen}
@@ -237,43 +272,9 @@ export function App({ rawJson }: AppProps) {
 					onCaseSenToggle={() => setCaseSen((v) => !v)}
 					onStepMatch={stepMatch}
 				/>
-			) : (
-				<JqBar
-					expr={jqExpr}
-					result={jqResult}
-					error={jqError}
-					onExprChange={setJqExpr}
-					onRun={handleJqEval}
-					onEscape={handleJqEscape}
-				/>
 			)}
 
-			<div className="viewer">
-				{parseError ? (
-					<textarea
-						className="raw-area"
-						readOnly
-						value={rawJson}
-						spellCheck={false}
-					/>
-				) : tab === "raw" ? (
-					<RawView content={rawStr} />
-				) : tab === "minify" ? (
-					<MinifyView data={data} />
-				) : showJqResult ? (
-					<JqResultView result={jqResult || ""} />
-				) : (
-					<TreeView
-						rows={rows}
-						selPath={selPath}
-						matchSet={matchSet}
-						focusPath={focusPath}
-						onToggle={handleToggle}
-						onSelect={setSelPath}
-						onCopy={handleCopyVal}
-					/>
-				)}
-			</div>
+			<div className="viewer">{renderContent()}</div>
 
 			<BottomBar
 				valid={!parseError}

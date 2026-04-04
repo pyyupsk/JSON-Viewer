@@ -1,5 +1,11 @@
 const UNHANDLED = {} as const;
 
+function toStr(v: unknown): string {
+	if (typeof v === "string") return v;
+	if (v !== null && typeof v === "object") return JSON.stringify(v);
+	return String(v as number | boolean | null | undefined);
+}
+
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 function getType(data: unknown): string {
@@ -64,7 +70,7 @@ function evalAdd(data: unknown): unknown {
 	return data.reduce(
 		(a: unknown, b: unknown) => {
 			if (typeof a === "number" && typeof b === "number") return a + b;
-			if (typeof a === "string") return String(a) + String(b);
+			if (typeof a === "string") return a + toStr(b);
 			if (Array.isArray(a) && Array.isArray(b))
 				return (a as unknown[]).concat(b as unknown[]);
 			if (typeof a === "object" && a && typeof b === "object" && b)
@@ -104,7 +110,7 @@ function evalSortBy(field: string, data: unknown): unknown[] {
 function evalGroupBy(field: string, data: unknown): unknown[] {
 	const groups: Record<string, unknown[]> = {};
 	for (const item of Array.isArray(data) ? data : []) {
-		const k = String((item as Record<string, unknown>)[field]);
+		const k = toStr((item as Record<string, unknown>)[field]);
 		if (!groups[k]) groups[k] = [];
 		groups[k].push(item);
 	}
@@ -114,7 +120,7 @@ function evalGroupBy(field: string, data: unknown): unknown[] {
 function evalUniqueBy(field: string, data: unknown): unknown[] {
 	const seen = new Set<string>();
 	return (Array.isArray(data) ? data : []).filter((item) => {
-		const k = String((item as Record<string, unknown>)[field]);
+		const k = toStr((item as Record<string, unknown>)[field]);
 		if (seen.has(k)) return false;
 		seen.add(k);
 		return true;
@@ -227,9 +233,9 @@ function evalKeyword(expr: string, data: unknown): unknown {
 	if (expr === "from_entries") return evalFromEntries(data);
 	if (expr === "add") return evalAdd(data);
 	if (expr === "recurse" || expr === "..") return evalRecurse(data);
-	if (expr === "ascii_downcase") return String(data).toLowerCase();
-	if (expr === "ascii_upcase") return String(data).toUpperCase();
-	if (expr === "tostring") return String(data);
+	if (expr === "ascii_downcase") return toStr(data).toLowerCase();
+	if (expr === "ascii_upcase") return toStr(data).toUpperCase();
+	if (expr === "tostring") return toStr(data);
 	if (expr === "tonumber") return Number(data);
 	return UNHANDLED;
 }
@@ -287,20 +293,20 @@ function evalPatternOp(expr: string, data: unknown): unknown {
 	// ltrimstr()
 	const ltM = /^ltrimstr\("(.*)"\)$/.exec(expr);
 	if (ltM)
-		return String(data).startsWith(ltM[1])
-			? String(data).slice(ltM[1].length)
+		return toStr(data).startsWith(ltM[1])
+			? toStr(data).slice(ltM[1].length)
 			: data;
 
 	// rtrimstr()
 	const rtM = /^rtrimstr\("(.*)"\)$/.exec(expr);
 	if (rtM)
-		return String(data).endsWith(rtM[1])
-			? String(data).slice(0, -rtM[1].length)
+		return toStr(data).endsWith(rtM[1])
+			? toStr(data).slice(0, -rtM[1].length)
 			: data;
 
 	// split()
 	const spM = /^split\("(.*)"\)$/.exec(expr);
-	if (spM) return String(data).split(spM[1]);
+	if (spM) return toStr(data).split(spM[1]);
 
 	// join()
 	const jnM = /^join\("(.*)"\)$/.exec(expr);
@@ -370,9 +376,9 @@ function evalCond(expr: string, data: unknown): boolean {
 		else if (!Number.isNaN(Number(rv as string))) rv = Number(rv as string);
 		switch (cmp[2]) {
 			case "==":
-				return String(lv) === String(rv) || lv === rv;
+				return toStr(lv) === toStr(rv) || lv === rv;
 			case "!=":
-				return String(lv) !== String(rv) && lv !== rv;
+				return toStr(lv) !== toStr(rv) && lv !== rv;
 			case ">":
 				return (lv as number) > (rv as number);
 			case "<":
