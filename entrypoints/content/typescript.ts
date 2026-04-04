@@ -154,8 +154,7 @@ function inferArrayType(value: unknown[], key: string, ctx: Ctx): string {
 		if (!types.includes(t)) types.push(t);
 	}
 
-	const unique = [...new Set(types)];
-	return unique.length === 1 ? `${unique[0]}[]` : `(${unique.join(" | ")})[]`;
+	return types.length === 1 ? `${types[0]}[]` : `(${types.join(" | ")})[]`;
 }
 
 function inferValue(
