@@ -60,7 +60,6 @@ jobs:
       - name: Generate changelog
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.version.outputs.tag }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
@@ -69,7 +68,7 @@ jobs:
           else
             bunx changelogen --output CHANGELOG.tmp.md --to HEAD^ --release "$VERSION"
           fi
-          sed -i '/^## /d' CHANGELOG.tmp.md
+          sed -i '/^## v/d' CHANGELOG.tmp.md
 
       - name: Create GitHub Release
         env:
