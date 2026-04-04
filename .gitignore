@@ -28,5 +28,6 @@ web-ext.config.ts
 # Environment
 .env*
 
-# Coverage
+# Coverage & Testing
 coverage
+test-results
