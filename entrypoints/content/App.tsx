@@ -258,6 +258,7 @@ export function App({ rawJson }: AppProps) {
 					expr={jqExpr}
 					result={jqResult}
 					error={jqError}
+					data={data}
 					onExprChange={setJqExpr}
 					onRun={handleJqEval}
 					onEscape={handleJqEscape}

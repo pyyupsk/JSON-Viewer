@@ -1,37 +1,56 @@
+import { suggest } from "../jq";
 import { CopiedIcon, InvalidIcon, RunIcon } from "./Icons";
 
 interface JqBarProps {
-	expr: string;
-	result: string | null;
-	error: string | null;
-	onExprChange: (v: string) => void;
-	onRun: () => void;
-	onEscape: () => void;
+	readonly expr: string;
+	readonly result: string | null;
+	readonly error: string | null;
+	readonly data: unknown;
+	readonly onExprChange: (v: string) => void;
+	readonly onRun: () => void;
+	readonly onEscape: () => void;
 }
 
 export function JqBar({
 	expr,
 	result,
 	error,
+	data,
 	onExprChange,
 	onRun,
 	onEscape,
-}: Readonly<JqBarProps>) {
+}: JqBarProps) {
 	const hasStatus = result !== null || error !== null;
+	const suffix = suggest(expr, data);
+
+	function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+		if (e.key === "Tab") {
+			e.preventDefault();
+			if (suffix) onExprChange(expr + suffix);
+			return;
+		}
+		if (e.key === "Enter") onRun();
+		if (e.key === "Escape") onEscape();
+	}
 
 	return (
 		<div className="jqbar">
 			<span className="jq-label">jq</span>
-			<input
-				className="jq-input"
-				placeholder=". | .features, .author.name, .stats | {stars, forks}"
-				value={expr}
-				onChange={(e) => onExprChange(e.target.value)}
-				onKeyDown={(e) => {
-					if (e.key === "Enter") onRun();
-					if (e.key === "Escape") onEscape();
-				}}
-			/>
+			<div className="jq-input-wrap">
+				{suffix && (
+					<span className="jq-ghost" aria-hidden>
+						<span className="jq-ghost-typed">{expr}</span>
+						<span className="jq-ghost-suffix">{suffix}</span>
+					</span>
+				)}
+				<input
+					className="jq-input"
+					placeholder=". | .features, .author.name, .stats | {stars, forks}"
+					value={expr}
+					onChange={(e) => onExprChange(e.target.value)}
+					onKeyDown={handleKeyDown}
+				/>
+			</div>
 			{hasStatus && (
 				<span className={`jq-status ${error ? "err" : "ok"}`}>
 					{error ? `${InvalidIcon} ${error}` : `${CopiedIcon} ok`}
