@@ -46,18 +46,6 @@ jobs:
       - name: Build Firefox zip
         run: bun run zip:firefox
 
-      - name: Generate changelog
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.version.outputs.tag }}
-        run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -n "$PREV_TAG" ]; then
-            bunx changelogen --output CHANGELOG.tmp.md --from "$PREV_TAG"
-          else
-            bunx changelogen --output CHANGELOG.tmp.md
-          fi
-
       - name: Create and push tag
         env:
           TAG: ${{ steps.version.outputs.tag }}
@@ -68,6 +56,19 @@ jobs:
             git tag "$TAG"
             git push origin "$TAG"
           fi
+
+      - name: Generate changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            bunx changelogen --output CHANGELOG.tmp.md --from "$PREV_TAG" --to HEAD^ --release "$VERSION"
+          else
+            bunx changelogen --output CHANGELOG.tmp.md --to HEAD^ --release "$VERSION"
+          fi
+          sed -i '/^## v/d' CHANGELOG.tmp.md
 
       - name: Create GitHub Release
         env:
