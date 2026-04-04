@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { jq } from "../../entrypoints/content/jq";
+import { jq, suggest } from "../../entrypoints/content/jq";
 
 const run = jq.run.bind(jq);
 
@@ -309,6 +309,66 @@ describe("jq", () => {
 	describe("comma", () => {
 		it("comma produces multiple values as array", () => {
 			expect(run(".a, .b", { a: 1, b: 2 })).toEqual([1, 2]);
+		});
+	});
+});
+
+describe("suggest", () => {
+	describe("key completions", () => {
+		it("suggests first key when expr is '.'", () => {
+			expect(suggest(".", { name: "Alice", age: 30 })).toBe("name");
+		});
+
+		it("suggests suffix for partial key", () => {
+			expect(suggest(".na", { name: "Alice" })).toBe("me");
+		});
+
+		it("suggests key after trailing dot", () => {
+			expect(suggest(".user.", { user: { id: 1, role: "admin" } })).toBe("id");
+		});
+
+		it("suggests nested partial key", () => {
+			expect(suggest(".user.ro", { user: { role: "admin" } })).toBe("le");
+		});
+
+		it("returns empty string when partial matches nothing", () => {
+			expect(suggest(".xyz", { name: "Alice" })).toBe("");
+		});
+
+		it("returns empty string when context is not an object", () => {
+			expect(suggest(".name.", { name: "Alice" })).toBe("");
+		});
+
+		it("returns empty string when jq.run throws on invalid prefix", () => {
+			expect(suggest(".bad[[[", { name: "Alice" })).toBe("");
+		});
+	});
+
+	describe("builtin completions", () => {
+		it("suggests builtin suffix for partial word", () => {
+			expect(suggest("ma", {})).toBe("p(");
+		});
+
+		it("suggests builtin suffix after pipe", () => {
+			expect(suggest(". | sel", {})).toBe("ect(");
+		});
+
+		it("suggests keyword without parens", () => {
+			expect(suggest("ke", {})).toBe("ys");
+		});
+
+		it("returns empty string when no builtin matches", () => {
+			expect(suggest("xyz", {})).toBe("");
+		});
+	});
+
+	describe("edge cases", () => {
+		it("returns empty string for empty expression", () => {
+			expect(suggest("", {})).toBe("");
+		});
+
+		it("key completion takes priority over builtin", () => {
+			expect(suggest(".to", { top: 1 })).toBe("p");
 		});
 	});
 });

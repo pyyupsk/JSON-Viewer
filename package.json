@@ -16,7 +16,12 @@
 		"url": "https://github.com/pyyupsk/json-viewer/issues"
 	},
 	"homepage": "https://github.com/pyyupsk/json-viewer#readme",
-	"keywords": ["json", "viewer", "formatter", "browser-extension"],
+	"keywords": [
+		"json",
+		"viewer",
+		"formatter",
+		"browser-extension"
+	],
 	"license": "MIT",
 	"type": "module",
 	"scripts": {
