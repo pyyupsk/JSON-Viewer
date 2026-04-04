@@ -143,7 +143,7 @@ function run(expr: string, data: unknown): unknown {
 			if (Array.isArray(a) && Array.isArray(b))
 				return (a as unknown[]).concat(b as unknown[]);
 			if (typeof a === "object" && a && typeof b === "object" && b)
-				return { ...a, ...b };
+				return Object.assign(a, b);
 			return b;
 		}, data[0] ?? null);
 	}
