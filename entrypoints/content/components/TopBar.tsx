@@ -1,4 +1,4 @@
-type Tab = 'tree' | 'raw' | 'jq';
+type Tab = 'tree' | 'raw' | 'minify' | 'jq';
 
 interface TopBarProps {
   tab: Tab;
@@ -19,6 +19,9 @@ export function TopBar({ tab, onTabChange, onCollapseAll, onExpandAll, onCopyAll
         </button>
         <button className={`tab${tab === 'raw' ? ' on' : ''}`} onClick={() => onTabChange('raw')}>
           Raw
+        </button>
+        <button className={`tab${tab === 'minify' ? ' on' : ''}`} onClick={() => onTabChange('minify')}>
+          Minify
         </button>
       </div>
       <div className="sep" />

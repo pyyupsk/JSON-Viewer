@@ -4,6 +4,7 @@ import { jq } from './jq';
 import { BottomBar } from './components/BottomBar';
 import { JqBar } from './components/JqBar';
 import { JqResultView } from './components/JqResultView';
+import { MinifyView } from './components/MinifyView';
 import { RawView } from './components/RawView';
 import { SearchBar } from './components/SearchBar';
 import { Toast } from './components/Toast';
@@ -11,7 +12,7 @@ import { TopBar } from './components/TopBar';
 import { TreeView } from './components/TreeView';
 import './style.css';
 
-type Tab = 'tree' | 'raw' | 'jq';
+type Tab = 'tree' | 'raw' | 'minify' | 'jq';
 
 interface AppProps {
   rawJson: string;
@@ -241,6 +242,8 @@ export function App({ rawJson }: AppProps) {
           <textarea className="raw-area" readOnly value={rawJson} spellCheck={false} />
         ) : tab === 'raw' ? (
           <RawView content={rawStr} />
+        ) : tab === 'minify' ? (
+          <MinifyView data={data} />
         ) : showJqResult ? (
           <JqResultView result={jqResult!} />
         ) : (
