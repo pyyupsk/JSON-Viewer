@@ -1,0 +1,118 @@
+name: Version Bump
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    name: Bump Version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check if release commit
+        id: guard
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" == "chore: release v"* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout
+        if: steps.guard.outputs.skip == 'false'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+
+      - name: Get merged PR bump label
+        if: steps.guard.outputs.skip == 'false'
+        id: labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LABELS=$(gh api "/repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
+            --jq '.[0].labels[].name' 2>/dev/null || echo "")
+
+          if echo "$LABELS" | grep -qx "major"; then
+            echo "bump=major" >> $GITHUB_OUTPUT
+          elif echo "$LABELS" | grep -qx "minor"; then
+            echo "bump=minor" >> $GITHUB_OUTPUT
+          else
+            echo "bump=patch" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Calculate new version
+        if: steps.guard.outputs.skip == 'false'
+        id: version
+        run: |
+          CURRENT=$(jq -r '.version' package.json)
+          BUMP="${{ steps.labels.outputs.bump }}"
+          NEW=$(node -e "
+            const [M, m, p] = '$CURRENT'.split('.').map(Number);
+            if ('$BUMP' === 'major') console.log((M+1)+'.0.0');
+            else if ('$BUMP' === 'minor') console.log(M+'.'+(m+1)+'.0');
+            else console.log(M+'.'+m+'.'+(p+1));
+          ")
+          echo "new_version=$NEW" >> $GITHUB_OUTPUT
+          echo "branch=release/v$NEW" >> $GITHUB_OUTPUT
+
+      - name: Check if bump branch already exists
+        if: steps.guard.outputs.skip == 'false'
+        id: branch_check
+        run: |
+          BRANCH="${{ steps.version.outputs.branch }}"
+          if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Bump package.json version
+        if: steps.guard.outputs.skip == 'false' && steps.branch_check.outputs.exists == 'false'
+        run: |
+          NEW="${{ steps.version.outputs.new_version }}"
+          jq --tab --arg v "$NEW" '.version = $v' package.json > package.json.tmp
+          mv package.json.tmp package.json
+
+      - name: Configure git
+        if: steps.guard.outputs.skip == 'false' && steps.branch_check.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push bump branch
+        if: steps.guard.outputs.skip == 'false' && steps.branch_check.outputs.exists == 'false'
+        run: |
+          BRANCH="${{ steps.version.outputs.branch }}"
+          NEW="${{ steps.version.outputs.new_version }}"
+          git checkout -b "$BRANCH"
+          git add package.json
+          git commit -m "chore: release v$NEW"
+          git push origin "$BRANCH"
+
+      - name: Ensure autorelease label exists
+        if: steps.guard.outputs.skip == 'false' && steps.branch_check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "autorelease" \
+            --color "0075ca" \
+            --description "Automated release PR — do not apply manually" \
+            --force
+
+      - name: Open release PR
+        if: steps.guard.outputs.skip == 'false' && steps.branch_check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEW="${{ steps.version.outputs.new_version }}"
+          BUMP="${{ steps.labels.outputs.bump }}"
+          gh pr create \
+            --title "chore: release v$NEW" \
+            --body "Automated **$BUMP** version bump → \`v$NEW\`" \
+            --base main \
+            --head "${{ steps.version.outputs.branch }}" \
+            --label "autorelease"
