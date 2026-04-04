@@ -27,3 +27,6 @@ web-ext.config.ts
 
 # Environment
 .env*
+
+# Coverage
+coverage
