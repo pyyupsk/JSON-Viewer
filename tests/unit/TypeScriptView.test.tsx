@@ -17,17 +17,17 @@ describe("TypeScriptView", () => {
 		expect((textarea as HTMLTextAreaElement).value).toContain("type Root =");
 	});
 
-	it("defaults to extracted mode — toggle label is 'Extracted'", () => {
+	it("defaults to extracted mode — toggle label is 'Inline'", () => {
 		render(<TypeScriptView data={data} name="Root" />);
 		const btn = screen.getByRole("button");
-		expect(btn.textContent).toBe("Extracted");
+		expect(btn.textContent).toBe("Inline");
 	});
 
-	it("switches to inline mode on toggle click — label becomes 'Inline'", () => {
+	it("switches to inline mode on toggle click — label becomes 'Extracted'", () => {
 		render(<TypeScriptView data={data} name="Root" />);
 		const btn = screen.getByRole("button");
 		fireEvent.click(btn);
-		expect(btn.textContent).toBe("Inline");
+		expect(btn.textContent).toBe("Extracted");
 	});
 
 	it("output changes when toggling between extracted and inline", () => {
