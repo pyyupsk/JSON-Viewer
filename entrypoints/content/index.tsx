@@ -1,6 +1,6 @@
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
-import "./style.css";
+import styles from "./style.css?inline";
 
 async function detectJson(): Promise<string | null> {
 	if (document.contentType === "application/json")
@@ -28,11 +28,16 @@ async function detectJson(): Promise<string | null> {
 
 export default defineContentScript({
 	matches: ["*://*/*"],
-	cssInjectionMode: "manifest",
+	cssInjectionMode: "manual",
 
 	async main() {
 		const raw = await detectJson();
 		if (!raw) return;
+
+		// Inject styles only on JSON pages
+		const style = document.createElement("style");
+		style.textContent = styles;
+		document.head.appendChild(style);
 
 		// Take over the page — remove all existing content and mount our viewer
 		document.documentElement.style.cssText = "height:100%;";
