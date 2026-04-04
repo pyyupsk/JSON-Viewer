@@ -286,9 +286,40 @@
 	flex-shrink: 0;
 }
 
-.jq-input {
+.jq-input-wrap {
 	flex: 1;
-	background: none;
+	position: relative;
+	display: flex;
+	align-items: center;
+	height: 100%;
+	overflow: hidden;
+}
+
+.jq-ghost {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	pointer-events: none;
+	white-space: pre;
+	font-family: var(--mono);
+	font-size: 12px;
+	overflow: hidden;
+}
+
+.jq-ghost-typed {
+	color: transparent;
+}
+
+.jq-ghost-suffix {
+	color: var(--dim);
+}
+
+.jq-input {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	background: transparent;
 	border: none;
 	outline: none;
 	color: var(--s);
