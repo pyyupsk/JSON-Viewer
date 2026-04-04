@@ -8,16 +8,23 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: bump-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   bump:
     name: Bump Version
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Check if release commit
         id: guard
+        env:
+          ACTOR: ${{ github.actor }}
         run: |
-          if [[ "${{ github.event.head_commit.message }}" == "chore: release v"* ]]; then
+          if [[ "$ACTOR" == "github-actions[bot]" ]]; then
             echo "skip=true" >> $GITHUB_OUTPUT
           else
             echo "skip=false" >> $GITHUB_OUTPUT
@@ -47,13 +54,15 @@ jobs:
       - name: Calculate new version
         if: steps.guard.outputs.skip == 'false'
         id: version
+        env:
+          BUMP: ${{ steps.labels.outputs.bump }}
         run: |
           CURRENT=$(jq -r '.version' package.json)
-          BUMP="${{ steps.labels.outputs.bump }}"
-          NEW=$(node -e "
-            const [M, m, p] = '$CURRENT'.split('.').map(Number);
-            if ('$BUMP' === 'major') console.log((M+1)+'.0.0');
-            else if ('$BUMP' === 'minor') console.log(M+'.'+(m+1)+'.0');
+          NEW=$(CURRENT="$CURRENT" node -e "
+            const [M, m, p] = process.env.CURRENT.split('.').map(Number);
+            const b = process.env.BUMP;
+            if (b === 'major') console.log((M+1)+'.0.0');
+            else if (b === 'minor') console.log(M+'.'+(m+1)+'.0');
             else console.log(M+'.'+m+'.'+(p+1));
           ")
           echo "new_version=$NEW" >> $GITHUB_OUTPUT
@@ -62,9 +71,10 @@ jobs:
       - name: Check if bump branch already exists
         if: steps.guard.outputs.skip == 'false'
         id: branch_check
+        env:
+          BRANCH: ${{ steps.version.outputs.branch }}
         run: |
-          BRANCH="${{ steps.version.outputs.branch }}"
-          if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -72,8 +82,9 @@ jobs:
 
       - name: Bump package.json version
         if: steps.guard.outputs.skip == 'false' && steps.branch_check.outputs.exists == 'false'
+        env:
+          NEW: ${{ steps.version.outputs.new_version }}
         run: |
-          NEW="${{ steps.version.outputs.new_version }}"
           jq --tab --arg v "$NEW" '.version = $v' package.json > package.json.tmp
           mv package.json.tmp package.json
 
@@ -85,9 +96,10 @@ jobs:
 
       - name: Commit and push bump branch
         if: steps.guard.outputs.skip == 'false' && steps.branch_check.outputs.exists == 'false'
+        env:
+          BRANCH: ${{ steps.version.outputs.branch }}
+          NEW: ${{ steps.version.outputs.new_version }}
         run: |
-          BRANCH="${{ steps.version.outputs.branch }}"
-          NEW="${{ steps.version.outputs.new_version }}"
           git checkout -b "$BRANCH"
           git add package.json
           git commit -m "chore: release v$NEW"
@@ -107,12 +119,12 @@ jobs:
         if: steps.guard.outputs.skip == 'false' && steps.branch_check.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW: ${{ steps.version.outputs.new_version }}
+          BUMP: ${{ steps.labels.outputs.bump }}
         run: |
-          NEW="${{ steps.version.outputs.new_version }}"
-          BUMP="${{ steps.labels.outputs.bump }}"
           gh pr create \
             --title "chore: release v$NEW" \
             --body "Automated **$BUMP** version bump → \`v$NEW\`" \
             --base main \
-            --head "${{ steps.version.outputs.branch }}" \
+            --head "release/v$NEW" \
             --label "autorelease"
