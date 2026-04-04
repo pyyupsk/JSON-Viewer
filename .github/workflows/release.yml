@@ -51,11 +51,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.version.outputs.tag }}
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || echo "")
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           if [ -n "$PREV_TAG" ]; then
-            bunx changelogen --output CHANGELOG.tmp.md --from "$PREV_TAG" --to "$TAG"
+            bunx changelogen --output CHANGELOG.tmp.md --from "$PREV_TAG"
           else
-            bunx changelogen --output CHANGELOG.tmp.md --to "$TAG"
+            bunx changelogen --output CHANGELOG.tmp.md
           fi
 
       - name: Create and push tag
