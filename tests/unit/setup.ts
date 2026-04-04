@@ -19,6 +19,7 @@ Object.defineProperty(navigator, "clipboard", {
 });
 
 Element.prototype.scrollIntoView = vi.fn();
+Element.prototype.scrollTo = vi.fn() as typeof Element.prototype.scrollTo;
 
 globalThis.requestAnimationFrame = vi.fn((cb) => {
 	cb(0);

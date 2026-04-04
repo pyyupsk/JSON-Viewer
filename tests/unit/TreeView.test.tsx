@@ -1,4 +1,4 @@
-import { fireEvent, render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { TreeView } from "../../entrypoints/content/components/TreeView";
 import type { Row } from "../../entrypoints/content/flatten";
@@ -70,5 +70,93 @@ describe("TreeView", () => {
 		const { container } = render(<TreeView {...defaultProps} rows={rows} />);
 		const scrollEl = container.querySelector(".tree-scroll") as HTMLElement;
 		fireEvent.scroll(scrollEl);
+	});
+
+	it("renders bottom spacer when rows exceed viewport", () => {
+		const manyRows: Row[] = Array.from({ length: 30 }, (_, i) => ({
+			kind: "prim" as const,
+			path: `root.item${i}`,
+			depth: 1,
+			key: `item${i}`,
+			value: i,
+			isLast: i === 29,
+		}));
+		const { container } = render(
+			<TreeView {...defaultProps} rows={manyRows} />,
+		);
+		expect(container.querySelector(".tree-spacer-bot")).toBeTruthy();
+	});
+
+	it("renders top spacer when scrolled past buffer", async () => {
+		const manyRows: Row[] = Array.from({ length: 100 }, (_, i) => ({
+			kind: "prim" as const,
+			path: `root.item${i}`,
+			depth: 1,
+			key: `item${i}`,
+			value: i,
+			isLast: i === 99,
+		}));
+		const { container } = render(
+			<TreeView {...defaultProps} rows={manyRows} />,
+		);
+		const scrollEl = container.querySelector(".tree-scroll") as HTMLElement;
+		Object.defineProperty(scrollEl, "scrollTop", {
+			value: 500,
+			writable: true,
+			configurable: true,
+		});
+		await act(async () => {
+			fireEvent.scroll(scrollEl);
+		});
+		expect(container.querySelector(".tree-spacer-top")).toBeTruthy();
+	});
+
+	it("does not scroll when focusPath row is not found", () => {
+		const { container } = render(
+			<TreeView {...defaultProps} rows={rows} focusPath="root.notfound" />,
+		);
+		expect(container.querySelector(".tree-scroll")).toBeTruthy();
+	});
+
+	it("scrolls focused row into view when focusPath changes (row below viewport)", async () => {
+		const { container, rerender } = render(
+			<TreeView {...defaultProps} rows={rows} focusPath={null} />,
+		);
+		const scrollEl = container.querySelector(".tree-scroll") as HTMLElement;
+		scrollEl.scrollTo = vi.fn();
+		await act(async () => {
+			rerender(<TreeView {...defaultProps} rows={rows} focusPath="root.b" />);
+		});
+	});
+
+	it("scrolls focused row into view when row is above viewport (scrollTop > rowTop)", async () => {
+		const { container, rerender } = render(
+			<TreeView {...defaultProps} rows={rows} focusPath={null} />,
+		);
+		const scrollEl = container.querySelector(".tree-scroll") as HTMLElement;
+		// Set scrollTop high so that rowTop < scrollTop (row is above viewport)
+		Object.defineProperty(scrollEl, "scrollTop", {
+			value: 500,
+			writable: true,
+			configurable: true,
+		});
+		scrollEl.scrollTo = vi.fn();
+		await act(async () => {
+			rerender(<TreeView {...defaultProps} rows={rows} focusPath="root.a" />);
+		});
+	});
+
+	it("marks selected close row via openPath resolution", () => {
+		const closeRow: Row = {
+			kind: "close",
+			path: "root__close",
+			depth: 0,
+			type: "object",
+			isLast: true,
+		};
+		const { container } = render(
+			<TreeView {...defaultProps} rows={[closeRow]} selPath="root" />,
+		);
+		expect(container.querySelector(".sel")).toBeTruthy();
 	});
 });

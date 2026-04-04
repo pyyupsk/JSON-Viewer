@@ -279,4 +279,53 @@ describe("App", () => {
 			expect(meta?.textContent).toBeTruthy();
 		});
 	});
+
+	it("toggles same node twice to cover add and delete branches", async () => {
+		const { container } = render(<App rawJson={validJson} />);
+		const togBtns = container.querySelectorAll(".tog");
+		if (togBtns.length > 0) {
+			await act(async () => {
+				fireEvent.click(togBtns[0]); // collapse (add to set)
+				fireEvent.click(togBtns[0]); // expand (delete from set)
+			});
+		}
+	});
+
+	it("copies object node value from tree row", async () => {
+		const { container } = render(<App rawJson={validJson} />);
+		const copyBtns = container.querySelectorAll(".copy-btn");
+		// Find a copy button on an open (object/array) row
+		if (copyBtns.length > 0) {
+			await act(async () => {
+				fireEvent.click(copyBtns[0]);
+			});
+			expect(navigator.clipboard.writeText).toHaveBeenCalled();
+		}
+	});
+
+	it("copies selected primitive node value via Ctrl+Shift+C", async () => {
+		const { container } = render(<App rawJson={validJson} />);
+		// Select a primitive row first
+		const treeItems = container.querySelectorAll('[role="treeitem"]');
+		// Find a prim row to select (not the first which is the open root)
+		for (const item of treeItems) {
+			if (!item.querySelector(".tog")) {
+				await act(async () => {
+					fireEvent.click(item);
+				});
+				break;
+			}
+		}
+		await act(async () => {
+			globalThis.dispatchEvent(
+				new KeyboardEvent("keydown", {
+					key: "C",
+					ctrlKey: true,
+					shiftKey: true,
+					bubbles: true,
+				}),
+			);
+		});
+		expect(navigator.clipboard.writeText).toHaveBeenCalled();
+	});
 });

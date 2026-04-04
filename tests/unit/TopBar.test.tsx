@@ -69,4 +69,11 @@ describe("TopBar", () => {
 		fireEvent.click(screen.getByRole("button", { name: /Copy/ }));
 		expect(onCopyAll).toHaveBeenCalled();
 	});
+
+	it("calls onTabChange with tree when clicking Tree tab", () => {
+		const onTabChange = vi.fn();
+		render(<TopBar {...defaultProps} tab="raw" onTabChange={onTabChange} />);
+		fireEvent.click(screen.getByRole("button", { name: "Tree" }));
+		expect(onTabChange).toHaveBeenCalledWith("tree");
+	});
 });

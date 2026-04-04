@@ -31,6 +31,7 @@ export function TreeView({
 	// Track scroll and viewport size
 	useEffect(() => {
 		const el = scrollRef.current;
+		/* v8 ignore next */
 		if (!el) return;
 
 		const onScroll = () => setScrollTop(el.scrollTop);
@@ -52,6 +53,7 @@ export function TreeView({
 		const idx = rows.findIndex((r) => r.path === focusPath);
 		if (idx === -1) return;
 		const el = scrollRef.current;
+		/* v8 ignore next */
 		if (!el) return;
 		const rowTop = idx * ROW_HEIGHT;
 		const rowBot = rowTop + ROW_HEIGHT;

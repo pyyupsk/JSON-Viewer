@@ -36,6 +36,22 @@ describe("jq", () => {
 		it("iterates array with .[]", () => {
 			expect(run(".[]", [1, 2, 3])).toEqual([1, 2, 3]);
 		});
+		it("iterates object values with .[]", () => {
+			const result = run(".[]", { a: 1, b: 2 }) as unknown[];
+			expect(result).toEqual([1, 2]);
+		});
+		it("returns null when intermediate path is null", () => {
+			expect(run(".a.b", { a: null })).toBeNull();
+		});
+		it("accesses object field via bracket notation with string key", () => {
+			expect(run('.["name"]', { name: "Alice" })).toBe("Alice");
+		});
+		it("throws on .[] of non-iterable", () => {
+			expect(() => run(".[]", 42)).toThrow("not iterable");
+		});
+		it("unknown expression throws", () => {
+			expect(() => run("unknownExpr", {})).toThrow("Unknown");
+		});
 	});
 
 	// ── Literals ────────────────────────────────────────────────────────────────
@@ -80,6 +96,12 @@ describe("jq", () => {
 		});
 		it("builds empty array", () => {
 			expect(run("[]", {})).toEqual([]);
+		});
+		it("builds object with shorthand field (no colon)", () => {
+			expect(run("{name}", { name: "Alice" })).toEqual({ name: "Alice" });
+		});
+		it("builds object with dot-shorthand field", () => {
+			expect(run("{.age}", { age: 30 })).toEqual({ age: 30 });
 		});
 	});
 
@@ -140,6 +162,33 @@ describe("jq", () => {
 		it("add merges objects", () => {
 			expect(run("add", [{ a: 1 }, { b: 2 }])).toEqual({ a: 1, b: 2 });
 		});
+		it("add concatenates arrays", () => {
+			expect(
+				run("add", [
+					[1, 2],
+					[3, 4],
+				]),
+			).toEqual([1, 2, 3, 4]);
+		});
+		it("add returns null for empty array", () => {
+			expect(run("add", [])).toBeNull();
+		});
+		it("add returns null for non-array", () => {
+			expect(run("add", 42)).toBeNull();
+		});
+		it("add falls back to last value for mixed types", () => {
+			expect(run("add", [true, "hello"])).toBe("hello");
+		});
+		it("recurse via .. alias", () => {
+			const result = run("..", { a: { b: 1 } }) as unknown[];
+			expect(result.length).toBeGreaterThan(1);
+		});
+		it("length returns 0 for null", () => {
+			expect(run("length", null)).toBe(0);
+		});
+		it("from_entries uses name key as fallback", () => {
+			expect(run("from_entries", [{ name: "a", value: 1 }])).toEqual({ a: 1 });
+		});
 	});
 
 	// ── Functions ────────────────────────────────────────────────────────────────
@@ -197,6 +246,24 @@ describe("jq", () => {
 				run("map_values(.name)", { a: { name: "Alice" }, b: { name: "Bob" } }),
 			).toEqual({ a: "Alice", b: "Bob" });
 		});
+		it("map_values transforms array values", () => {
+			expect(run("map_values(tostring)", [1, 2, 3])).toEqual(["1", "2", "3"]);
+		});
+		it("map on object uses Object.values", () => {
+			const result = run("map(tostring)", { a: 1, b: 2 }) as string[];
+			expect(result).toEqual(["1", "2"]);
+		});
+		it("select with boolean field (no comparison)", () => {
+			expect(
+				run("map(select(.active))", [{ active: true }, { active: false }]),
+			).toEqual([{ active: true }]);
+		});
+		it("if-then without else returns data when condition false", () => {
+			expect(run("if .x > 0 then .x end", { x: -1 })).toEqual({ x: -1 });
+		});
+		it("if-then without else returns value when condition true", () => {
+			expect(run("if .x > 0 then .x end", { x: 5 })).toBe(5);
+		});
 	});
 
 	// ── Comparisons ─────────────────────────────────────────────────────────────
@@ -222,6 +289,18 @@ describe("jq", () => {
 		});
 		it("<= less than or equal", () => {
 			expect(run("select(. <= 5)", 5)).toBe(5);
+		});
+		it("== comparison with null rv", () => {
+			expect(run("select(. == null)", null)).toBeNull();
+		});
+		it("== comparison with true rv", () => {
+			expect(run("select(. == true)", true)).toBe(true);
+		});
+		it("== comparison with false rv", () => {
+			expect(run("select(. == false)", false)).toBe(false);
+		});
+		it("!= comparison with numeric rv", () => {
+			expect(run("select(. != 42)", 1)).toBe(1);
 		});
 	});
 
