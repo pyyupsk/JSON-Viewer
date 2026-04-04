@@ -17,7 +17,7 @@ export function TypeScriptView({ data, name }: Readonly<TypeScriptViewProps>) {
 				className="ts-toggle"
 				onClick={() => setInline((v) => !v)}
 			>
-				{inline ? "Inline" : "Extracted"}
+				{inline ? "Extracted" : "Inline"}
 			</button>
 			<textarea
 				className="raw-area"
