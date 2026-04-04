@@ -32,7 +32,7 @@ A browser extension that beautifully formats and displays JSON responses directl
 
 ## Contributing
 
-Bug reports and feature requests are welcome via [GitHub Issues](https://github.com/pyyupsk/json-viewer/issues).
+Bug reports and feature requests are welcome via [GitHub Issues](https://github.com/pyyupsk/JSON-Viewer/issues).
 
 ## License
 
