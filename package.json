@@ -22,7 +22,10 @@
 		"test:watch": "vitest",
 		"pretest:e2e": "playwright install chromium",
 		"test:e2e": "playwright test",
-		"test:e2e:coverage": "E2E_COVERAGE=1 playwright test"
+		"build:coverage": "E2E_COVERAGE=1 wxt build",
+		"test:e2e:coverage": "bun run build:coverage && E2E_COVERAGE=1 playwright test",
+		"coverage:merge": "bun scripts/merge-coverage.ts",
+		"coverage:all": "bun run test:coverage && bun run test:e2e:coverage && bun run coverage:merge"
 	},
 	"dependencies": {
 		"@fontsource/geist": "^5.2.8",

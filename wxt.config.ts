@@ -8,4 +8,10 @@ export default defineConfig({
 	webExt: {
 		startUrls: ["https://jsonplaceholder.typicode.com/todos"],
 	},
+	vite: () => ({
+		build: {
+			// Source maps are required to map bundled coverage back to TypeScript source
+			sourcemap: process.env.E2E_COVERAGE === "1",
+		},
+	}),
 });

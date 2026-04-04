@@ -31,4 +31,6 @@ web-ext.config.ts
 # Coverage & Testing
 coverage
 coverage-e2e
+coverage-all
 test-results
+**/monocart-coverage-app.js

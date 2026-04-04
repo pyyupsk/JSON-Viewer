@@ -10,7 +10,7 @@ export default defineConfig({
 		coverage: {
 			provider: "v8",
 			include: ["entrypoints/**/*.ts", "entrypoints/**/*.tsx"],
-			reporter: ["text", "html"],
+			reporter: ["text", "html", "json"],
 		},
 	},
 });
