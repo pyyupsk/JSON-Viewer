@@ -3,6 +3,17 @@ name: Version Bump
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 permissions:
   contents: write
@@ -32,23 +43,28 @@ jobs:
 
       - name: Checkout
         if: steps.guard.outputs.skip == 'false'
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Get merged PR bump label
         if: steps.guard.outputs.skip == 'false'
         id: labels
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISPATCH_BUMP: ${{ inputs.bump }}
         run: |
-          LABELS=$(gh api "/repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
-            --jq '.[0].labels[].name' 2>/dev/null || echo "")
-
-          if echo "$LABELS" | grep -qx "major"; then
-            echo "bump=major" >> $GITHUB_OUTPUT
-          elif echo "$LABELS" | grep -qx "minor"; then
-            echo "bump=minor" >> $GITHUB_OUTPUT
+          if [ -n "$DISPATCH_BUMP" ]; then
+            echo "bump=$DISPATCH_BUMP" >> $GITHUB_OUTPUT
           else
-            echo "bump=patch" >> $GITHUB_OUTPUT
+            LABELS=$(gh api "/repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
+              --jq '.[0].labels[].name' 2>/dev/null || echo "")
+
+            if echo "$LABELS" | grep -qx "major"; then
+              echo "bump=major" >> $GITHUB_OUTPUT
+            elif echo "$LABELS" | grep -qx "minor"; then
+              echo "bump=minor" >> $GITHUB_OUTPUT
+            else
+              echo "bump=patch" >> $GITHUB_OUTPUT
+            fi
           fi
 
       - name: Calculate new version
