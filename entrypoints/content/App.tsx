@@ -70,7 +70,7 @@ export function App({ rawJson }: AppProps) {
 		[data, rawJson],
 	);
 	const sizeKb = (rawJson.length / 1024).toFixed(1);
-	const tsName = useMemo(() => nameFromUrl(window.location.pathname), []);
+	const tsName = useMemo(() => nameFromUrl(globalThis.location.pathname), []);
 
 	// ── Handlers ── (showToast declared early; used in keyboard shortcut effect below) ──
 

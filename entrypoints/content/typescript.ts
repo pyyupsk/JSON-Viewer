@@ -105,7 +105,7 @@ function inferObjectShape(
 		const values = presentIn.map((o) => o[key]);
 
 		const nonNull = values.filter((v) => v !== null);
-		const hasNull = values.some((v) => v === null);
+		const hasNull = values.includes(null);
 
 		let type: string;
 		if (nonNull.length === 0) {
@@ -126,6 +126,38 @@ function inferObjectShape(
 
 // ─── value inference ──────────────────────────────────────────────────────────
 
+function inferArrayType(value: unknown[], key: string, ctx: Ctx): string {
+	if (value.length === 0) return "unknown[]";
+
+	const objs = value.filter(
+		(x) => x !== null && typeof x === "object" && !Array.isArray(x),
+	) as Record<string, unknown>[];
+
+	const prims = value.filter(
+		(x) => x === null || typeof x !== "object" || Array.isArray(x),
+	);
+
+	const types: string[] = [];
+
+	if (objs.length > 0) {
+		const body = inferObjectShape(objs, key, ctx);
+		if (ctx.inline) {
+			types.push(`{\n${body}\n}`);
+		} else {
+			const name = allocateName(toPascalCase(key), body, ctx);
+			types.push(name);
+		}
+	}
+
+	for (const p of prims) {
+		const t = inferValue(p, key, ctx, value);
+		if (!types.includes(t)) types.push(t);
+	}
+
+	const unique = [...new Set(types)];
+	return unique.length === 1 ? `${unique[0]}[]` : `(${unique.join(" | ")})[]`;
+}
+
 function inferValue(
 	value: unknown,
 	key: string,
@@ -136,38 +168,7 @@ function inferValue(
 	if (typeof value === "string") return "string";
 	if (typeof value === "number") return "number";
 	if (typeof value === "boolean") return "boolean";
-
-	if (Array.isArray(value)) {
-		if (value.length === 0) return "unknown[]";
-
-		const objs = value.filter(
-			(x) => x !== null && typeof x === "object" && !Array.isArray(x),
-		) as Record<string, unknown>[];
-
-		const prims = value.filter(
-			(x) => x === null || typeof x !== "object" || Array.isArray(x),
-		);
-
-		const types: string[] = [];
-
-		if (objs.length > 0) {
-			const body = inferObjectShape(objs, key, ctx);
-			if (ctx.inline) {
-				types.push(`{\n${body}\n}`);
-			} else {
-				const name = allocateName(toPascalCase(key), body, ctx);
-				types.push(name);
-			}
-		}
-
-		for (const p of prims) {
-			const t = inferValue(p, key, ctx, value);
-			if (!types.includes(t)) types.push(t);
-		}
-
-		const unique = [...new Set(types)];
-		return unique.length === 1 ? `${unique[0]}[]` : `(${unique.join(" | ")})[]`;
-	}
+	if (Array.isArray(value)) return inferArrayType(value, key, ctx);
 
 	// Object
 	const obj = value as Record<string, unknown>;
@@ -178,6 +179,13 @@ function inferValue(
 }
 
 // ─── public API ───────────────────────────────────────────────────────────────
+
+function inferPrimitive(data: unknown): string {
+	if (typeof data === "string") return "string";
+	if (typeof data === "number") return "number";
+	if (typeof data === "boolean") return "boolean";
+	return "unknown";
+}
 
 export function jsonToTs(
 	data: unknown,
@@ -206,14 +214,7 @@ export function jsonToTs(
 		);
 		rootTs = `{\n${body}\n}`;
 	} else {
-		rootTs =
-			typeof data === "string"
-				? "string"
-				: typeof data === "number"
-					? "number"
-					: typeof data === "boolean"
-						? "boolean"
-						: "unknown";
+		rootTs = inferPrimitive(data);
 	}
 
 	const parts: string[] = [];
