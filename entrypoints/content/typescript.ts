@@ -1,6 +1,10 @@
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 function toPascalCase(s: string): string {
+	if (!/[-_\s]/.test(s)) {
+		// No separators — just capitalize the first letter, preserve the rest
+		return s.charAt(0).toUpperCase() + s.slice(1);
+	}
 	return s
 		.split(/[-_\s]+/)
 		.filter(Boolean)
@@ -9,7 +13,10 @@ function toPascalCase(s: string): string {
 }
 
 function toSingular(name: string): string {
-	if (name.length > 1 && name.endsWith("s")) return name.slice(0, -1);
+	// Only strip trailing 's' if result is at least 3 chars and doesn't end in 'ss'
+	if (name.length > 3 && name.endsWith("s") && !name.endsWith("ss")) {
+		return name.slice(0, -1);
+	}
 	return `${name}Item`;
 }
 
@@ -25,6 +32,7 @@ interface Ctx {
 	inline: boolean;
 	extracted: Map<string, string>; // name → body lines
 	root: unknown;
+	rootName: string;
 }
 
 // ─── null inference ───────────────────────────────────────────────────────────
@@ -72,10 +80,11 @@ function allocateName(base: string, body: string, ctx: Ctx): string {
 	for (const [name, existing] of ctx.extracted) {
 		if (existing === body) return name;
 	}
-	// Find a unique name
+	// Find a unique name (also avoid the rootName to prevent duplicate type declarations)
 	let name = base;
 	let n = 2;
-	while (ctx.extracted.has(name)) name = `${base}${n++}`;
+	while (ctx.extracted.has(name) || name === ctx.rootName)
+		name = `${base}${n++}`;
 	ctx.extracted.set(name, body);
 	return name;
 }
@@ -175,7 +184,7 @@ export function jsonToTs(
 	rootName: string,
 	inline: boolean,
 ): string {
-	const ctx: Ctx = { inline, extracted: new Map(), root: data };
+	const ctx: Ctx = { inline, extracted: new Map(), root: data, rootName };
 
 	let rootTs: string;
 

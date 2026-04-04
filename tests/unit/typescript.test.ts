@@ -83,6 +83,13 @@ describe("jsonToTs", () => {
 			expect(result).toContain("type User =");
 			expect(result).toContain("type User2 =");
 		});
+
+		it("avoids duplicate type name when extracted key matches rootName", () => {
+			const result = jsonToTs({ user: { id: 1 } }, "User", false);
+			// Should not contain "type User" twice
+			expect(result.match(/^type User /gm)?.length).toBe(1);
+			expect(result).toContain("type User = {\n  user: User2\n}");
+		});
 	});
 
 	describe("nested objects — inline mode", () => {
