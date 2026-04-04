@@ -27,7 +27,7 @@ export function TreeRow({
 	onToggle,
 	onSelect,
 	onCopy,
-}: TreeRowProps) {
+}: Readonly<TreeRowProps>) {
 	const [copied, setCopied] = useState(false);
 
 	// For close rows, clicking selects the opening node
@@ -36,8 +36,9 @@ export function TreeRow({
 
 	const handleCopy = (e: React.MouseEvent) => {
 		e.stopPropagation();
-		if (row.kind === "open") onCopy(row.value);
-		else if (row.kind === "prim") onCopy(row.value);
+		if (row.kind === "open" || row.kind === "prim") {
+			onCopy(row.value);
+		}
 		setCopied(true);
 		setTimeout(() => setCopied(false), 1200);
 	};
@@ -89,10 +90,10 @@ export function TreeRow({
 function OpenContent({
 	row,
 	onToggle,
-}: {
+}: Readonly<{
 	row: Extract<Row, { kind: "open" }>;
 	onToggle: (path: string) => void;
-}) {
+}>) {
 	const open = row.type === "array" ? "[" : "{";
 	const close = row.type === "array" ? "]" : "}";
 	const label = `${row.count} ${row.type === "array" ? "items" : "keys"}`;
@@ -139,7 +140,9 @@ function OpenContent({
 	);
 }
 
-function CloseContent({ row }: { row: Extract<Row, { kind: "close" }> }) {
+function CloseContent({
+	row,
+}: Readonly<{ row: Extract<Row, { kind: "close" }> }>) {
 	const close = row.type === "array" ? "]" : "}";
 	return (
 		<>
@@ -152,7 +155,9 @@ function CloseContent({ row }: { row: Extract<Row, { kind: "close" }> }) {
 	);
 }
 
-function PrimContent({ row }: { row: Extract<Row, { kind: "prim" }> }) {
+function PrimContent({
+	row,
+}: Readonly<{ row: Extract<Row, { kind: "prim" }> }>) {
 	return (
 		<>
 			<span className="tog-space" />

@@ -1,0 +1,9 @@
+{
+	"$schema": "https://unpkg.com/knip@6.3.0/schema.json",
+	"entry": ["entrypoints/**/*.{ts,tsx}", "wxt.config.ts", "scripts/**/*.ts"],
+	"ignoreDependencies": [
+		"@fontsource/geist",
+		"@fontsource/jetbrains-mono",
+		"@wxt-dev/module-react"
+	]
+}
