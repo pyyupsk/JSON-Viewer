@@ -69,6 +69,7 @@ jobs:
           else
             bunx changelogen --output CHANGELOG.tmp.md --to HEAD^ --release "$VERSION"
           fi
+          sed -i '/^## /d' CHANGELOG.tmp.md
 
       - name: Create GitHub Release
         env:
