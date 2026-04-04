@@ -355,11 +355,23 @@
 	line-height: var(--lh);
 	min-width: max-content;
 	width: 100%;
+	animation: slide-in 0.15s ease;
 }
 
 .tree-spacer-top,
 .tree-spacer-bot {
 	width: 100%;
+}
+
+@keyframes slide-in {
+	from {
+		opacity: 0;
+		transform: translateY(3px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
 }
 
 .row {
@@ -641,20 +653,4 @@
 }
 ::-webkit-scrollbar-thumb:hover {
 	background: var(--line2);
-}
-
-/* ── Tree slide-in ─────────────────────────────────────────────────────────── */
-
-@keyframes slide-in {
-	from {
-		opacity: 0;
-		transform: translateY(3px);
-	}
-	to {
-		opacity: 1;
-		transform: none;
-	}
-}
-.tree {
-	animation: slide-in 0.15s ease;
 }

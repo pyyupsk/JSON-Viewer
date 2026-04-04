@@ -25,7 +25,6 @@ export function SearchIcon() {
 			height="13"
 			viewBox="0 0 13 13"
 			fill="none"
-			role="img"
 			aria-label="Search"
 		>
 			<circle cx="5.5" cy="5.5" r="4" stroke="#555" strokeWidth="1.2" />

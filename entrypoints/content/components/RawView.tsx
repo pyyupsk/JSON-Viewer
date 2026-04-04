@@ -2,7 +2,7 @@ interface RawViewProps {
 	content: string;
 }
 
-export function RawView({ content }: RawViewProps) {
+export function RawView({ content }: Readonly<RawViewProps>) {
 	return (
 		<textarea
 			className="raw-area"

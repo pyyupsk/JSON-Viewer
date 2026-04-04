@@ -16,7 +16,7 @@ async function detectJson(): Promise<string | null> {
 	if (raw.length > 5_000_000) return null;
 
 	const trimmed = raw.trimStart();
-	if (trimmed[0] !== "{" && trimmed[0] !== "[") return null;
+	if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return null;
 
 	try {
 		JSON.parse(raw);

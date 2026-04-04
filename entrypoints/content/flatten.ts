@@ -1,6 +1,3 @@
-// Row discriminated union — one entry per visible line in the tree.
-// flattenData() walks the JSON depth-first, skipping children of collapsed paths.
-
 export type OpenRow = {
 	kind: "open";
 	path: string;
@@ -107,7 +104,7 @@ function walk(
 export function rowSearchText(row: Row): string {
 	if (row.kind === "close") return "";
 
-	const kp = row.key !== null ? `"${row.key}": ` : "";
+	const kp = row.key === null ? "" : `"${row.key}": `;
 
 	if (row.kind === "open") {
 		const open = row.type === "array" ? "[" : "{";

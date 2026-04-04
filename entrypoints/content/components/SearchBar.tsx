@@ -18,7 +18,7 @@ export function SearchBar({
 	onQueryChange,
 	onCaseSenToggle,
 	onStepMatch,
-}: SearchBarProps) {
+}: Readonly<SearchBarProps>) {
 	const meta = query
 		? matchCount > 0
 			? `${matchIdx + 1} / ${matchCount}`

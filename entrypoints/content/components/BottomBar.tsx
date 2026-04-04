@@ -12,7 +12,7 @@ export function BottomBar({
 	sizeKb,
 	lineCount,
 	selPath,
-}: BottomBarProps) {
+}: Readonly<BottomBarProps>) {
 	return (
 		<div className="bottombar">
 			<span className={valid ? "bb-ok" : "bb-err"}>

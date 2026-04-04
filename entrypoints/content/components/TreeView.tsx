@@ -23,7 +23,7 @@ export function TreeView({
 	onToggle,
 	onSelect,
 	onCopy,
-}: TreeViewProps) {
+}: Readonly<TreeViewProps>) {
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const [scrollTop, setScrollTop] = useState(0);
 	const [viewportHeight, setViewportHeight] = useState(600);

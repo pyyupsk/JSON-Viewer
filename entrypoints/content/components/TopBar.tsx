@@ -16,7 +16,7 @@ export function TopBar({
 	onCollapseAll,
 	onExpandAll,
 	onCopyAll,
-}: TopBarProps) {
+}: Readonly<TopBarProps>) {
 	return (
 		<div className="topbar">
 			<span className="logo">{"{ }"} json</span>

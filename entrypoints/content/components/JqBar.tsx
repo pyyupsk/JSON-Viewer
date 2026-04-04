@@ -16,7 +16,7 @@ export function JqBar({
 	onExprChange,
 	onRun,
 	onEscape,
-}: JqBarProps) {
+}: Readonly<JqBarProps>) {
 	const hasStatus = result !== null || error !== null;
 
 	return (

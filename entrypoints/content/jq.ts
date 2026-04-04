@@ -1,14 +1,3 @@
-// Pure TypeScript port of the jq-like engine from the prototype.
-// No external dependencies. Handles the subset of jq used in the JSON viewer.
-
-type JsonValue =
-	| string
-	| number
-	| boolean
-	| null
-	| JsonValue[]
-	| { [k: string]: JsonValue };
-
 function run(expr: string, data: unknown): unknown {
 	expr = expr.trim();
 	if (!expr || expr === ".") return data;
@@ -44,14 +33,14 @@ function run(expr: string, data: unknown): unknown {
 	if (commas.length > 1) return commas.map((e) => run(e.trim(), data));
 
 	// select()
-	const selM = expr.match(/^select\((.+)\)$/);
+	const selM = /^select\((.+)\)$/.exec(expr);
 	if (selM) {
 		const v = evalCond(selM[1], data);
 		return v ? data : undefined;
 	}
 
 	// has()
-	const hasM = expr.match(/^has\("(.+)"\)$/);
+	const hasM = /^has\("(.+)"\)$/.exec(expr);
 	if (hasM) return Object.hasOwn(data ?? {}, hasM[1]);
 
 	// keys / values / length / type
@@ -85,7 +74,7 @@ function run(expr: string, data: unknown): unknown {
 	}
 
 	// map()
-	const mapM = expr.match(/^map\((.+)\)$/);
+	const mapM = /^map\((.+)\)$/.exec(expr);
 	if (mapM) {
 		const arr = Array.isArray(data)
 			? data
@@ -94,7 +83,7 @@ function run(expr: string, data: unknown): unknown {
 	}
 
 	// map_values()
-	const mvM = expr.match(/^map_values\((.+)\)$/);
+	const mvM = /^map_values\((.+)\)$/.exec(expr);
 	if (mvM) {
 		if (Array.isArray(data)) return data.map((i) => run(mvM[1], i));
 		const o: Record<string, unknown> = {};
@@ -107,7 +96,7 @@ function run(expr: string, data: unknown): unknown {
 	}
 
 	// sort_by()
-	const sbM = expr.match(/^sort_by\((.+)\)$/);
+	const sbM = /^sort_by\((.+)\)$/i.exec(expr);
 	if (sbM) {
 		const field = sbM[1].trim().replace(/^\./, "");
 		return [...(Array.isArray(data) ? data : [])].sort((a, b) => {
@@ -120,7 +109,7 @@ function run(expr: string, data: unknown): unknown {
 	}
 
 	// group_by()
-	const gbM = expr.match(/^group_by\((.+)\)$/);
+	const gbM = /^group_by\((.+)\)$/.exec(expr);
 	if (gbM) {
 		const field = gbM[1].trim().replace(/^\./, "");
 		const groups: Record<string, unknown[]> = {};
@@ -133,7 +122,7 @@ function run(expr: string, data: unknown): unknown {
 	}
 
 	// unique_by()
-	const ubM = expr.match(/^unique_by\((.+)\)$/);
+	const ubM = /^unique_by\((.+)\)$/.exec(expr);
 	if (ubM) {
 		const field = ubM[1].trim().replace(/^\./, "");
 		const seen = new Set<string>();
@@ -154,7 +143,7 @@ function run(expr: string, data: unknown): unknown {
 			if (Array.isArray(a) && Array.isArray(b))
 				return (a as unknown[]).concat(b as unknown[]);
 			if (typeof a === "object" && a && typeof b === "object" && b)
-				return { ...(a as object), ...(b as object) };
+				return { ...a, ...b };
 			return b;
 		}, data[0] ?? null);
 	}
@@ -167,21 +156,21 @@ function run(expr: string, data: unknown): unknown {
 	if (expr === "ascii_upcase") return String(data).toUpperCase();
 
 	// ltrimstr / rtrimstr
-	const ltM = expr.match(/^ltrimstr\("(.*)"\)$/);
+	const ltM = /^ltrimstr\("(.*)"\)$/.exec(expr);
 	if (ltM)
 		return String(data).startsWith(ltM[1])
 			? String(data).slice(ltM[1].length)
 			: data;
-	const rtM = expr.match(/^rtrimstr\("(.*)"\)$/);
+	const rtM = /^rtrimstr\("(.*)"\)$/.exec(expr);
 	if (rtM)
 		return String(data).endsWith(rtM[1])
 			? String(data).slice(0, -rtM[1].length)
 			: data;
 
 	// split / join
-	const spM = expr.match(/^split\("(.*)"\)$/);
+	const spM = /^split\("(.*)"\)$/.exec(expr);
 	if (spM) return String(data).split(spM[1]);
-	const jnM = expr.match(/^join\("(.*)"\)$/);
+	const jnM = /^join\("(.*)"\)$/.exec(expr);
 	if (jnM) return (Array.isArray(data) ? data : []).join(jnM[1]);
 
 	// tostring / tonumber
@@ -201,8 +190,8 @@ function run(expr: string, data: unknown): unknown {
 	}
 
 	// if-then-else
-	const ifM = expr.match(
-		/^if\s+(.+?)\s+then\s+(.+?)(?:\s+else\s+(.+?))?\s+end$/,
+	const ifM = /^if\s+(.+?)\s+then\s+(.+?)(?:\s+else\s+(.+?))?\s+end$/.exec(
+		expr,
 	);
 	if (ifM) {
 		const cond = evalCond(ifM[1], data);
@@ -257,8 +246,11 @@ function pathGet(path: string, data: unknown): unknown {
 		if (t.type === "idx") {
 			let idx: number | string | null;
 			if (t.val === "") idx = null;
-			else if (!Number.isNaN(Number(t.val))) idx = Number(t.val);
-			else idx = t.val.replaceAll('"', "");
+			else if (Number.isNaN(Number(t.val))) {
+				idx = t.val.replaceAll('"', "");
+			} else {
+				idx = Number(t.val);
+			}
 			cur =
 				idx === null
 					? Array.isArray(cur)
@@ -273,7 +265,7 @@ function pathGet(path: string, data: unknown): unknown {
 }
 
 function evalCond(expr: string, data: unknown): boolean {
-	const cmp = expr.match(/^(.+?)\s*(==|!=|>=|<=|>|<)\s*(.+)$/);
+	const cmp = /^(.+?)\s*(==|!=|>=|<=|>|<)\s*(.+)$/.exec(expr);
 	if (cmp) {
 		const lv = run(cmp[1].trim(), data);
 		let rv: unknown = cmp[3].trim();
@@ -305,12 +297,12 @@ function buildObj(inner: string, data: unknown): unknown {
 	splitComma(inner).forEach((entry) => {
 		entry = entry.trim();
 		const colon = entry.indexOf(":");
-		if (colon !== -1) {
-			const k = entry.slice(0, colon).trim().replaceAll('"', "");
-			o[k] = run(entry.slice(colon + 1).trim(), data);
-		} else {
+		if (colon === -1) {
 			const field = entry.replace(/^\./, "");
 			o[field] = run(entry.startsWith(".") ? entry : `.${entry}`, data);
+		} else {
+			const k = entry.slice(0, colon).trim().replaceAll('"', "");
+			o[k] = run(entry.slice(colon + 1).trim(), data);
 		}
 	});
 	return o;
@@ -359,6 +351,3 @@ function splitComma(expr: string): string[] {
 }
 
 export const jq = { run };
-
-// Suppress unused type warning
-export type { JsonValue };
