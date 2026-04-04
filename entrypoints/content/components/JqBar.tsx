@@ -2,13 +2,13 @@ import { suggest } from "../jq";
 import { CopiedIcon, InvalidIcon, RunIcon } from "./Icons";
 
 interface JqBarProps {
-	readonly expr: string;
-	readonly result: string | null;
-	readonly error: string | null;
-	readonly data: unknown;
-	readonly onExprChange: (v: string) => void;
-	readonly onRun: () => void;
-	readonly onEscape: () => void;
+	expr: string;
+	result: string | null;
+	error: string | null;
+	data: unknown;
+	onExprChange: (v: string) => void;
+	onRun: () => void;
+	onEscape: () => void;
 }
 
 export function JqBar({
@@ -19,7 +19,7 @@ export function JqBar({
 	onExprChange,
 	onRun,
 	onEscape,
-}: JqBarProps) {
+}: Readonly<JqBarProps>) {
 	const hasStatus = result !== null || error !== null;
 	const suffix = suggest(expr, data);
 

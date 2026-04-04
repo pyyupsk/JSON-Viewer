@@ -1,6 +1,7 @@
+// @vitest-environment happy-dom
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { JqBar } from "../../entrypoints/content/components/JqBar";
 
 const baseProps = {
@@ -14,6 +15,10 @@ const baseProps = {
 };
 
 describe("JqBar", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
 	it("renders without status when result and error are null", () => {
 		const { container } = render(<JqBar {...baseProps} />);
 		expect(container.querySelector(".jq-status")).toBeNull();
