@@ -1,7 +1,186 @@
-function run(expr: string, data: unknown): unknown {
-	expr = expr.trim();
-	if (!expr || expr === ".") return data;
+const UNHANDLED = {} as const;
 
+// ─── helpers ────────────────────────────────────────────────────────────────
+
+function getType(data: unknown): string {
+	if (Array.isArray(data)) return "array";
+	if (data === null) return "null";
+	return typeof data;
+}
+
+function updateDepth(c: string, depth: number): number {
+	if ("([{".includes(c)) return depth + 1;
+	if (")]}".includes(c)) return depth - 1;
+	return depth;
+}
+
+function splitOn(expr: string, sep: string): string[] {
+	const parts: string[] = [];
+	let depth = 0,
+		str = false,
+		buf = "";
+	for (let i = 0; i < expr.length; i++) {
+		const c = expr[i];
+		if (c === '"' && expr[i - 1] !== "\\") str = !str;
+		if (!str) depth = updateDepth(c, depth);
+		if (!str && depth === 0 && c === sep) {
+			parts.push(buf);
+			buf = "";
+		} else buf += c;
+	}
+	parts.push(buf);
+	return parts;
+}
+
+function splitPipe(expr: string): string[] {
+	return splitOn(expr, "|");
+}
+
+function splitComma(expr: string): string[] {
+	return splitOn(expr, ",");
+}
+
+function evalLength(data: unknown): number {
+	if (Array.isArray(data)) return data.length;
+	if (typeof data === "string") return data.length;
+	if (typeof data === "object" && data) return Object.keys(data).length;
+	return 0;
+}
+
+function evalFromEntries(data: unknown): Record<string, unknown> {
+	const o: Record<string, unknown> = {};
+	for (const e of (data ?? []) as Array<{
+		key?: string;
+		name?: string;
+		value: unknown;
+	}>) {
+		o[e.key ?? e.name ?? ""] = e.value;
+	}
+	return o;
+}
+
+function evalAdd(data: unknown): unknown {
+	if (!Array.isArray(data)) return null;
+	return data.reduce(
+		(a: unknown, b: unknown) => {
+			if (typeof a === "number" && typeof b === "number") return a + b;
+			if (typeof a === "string") return String(a) + String(b);
+			if (Array.isArray(a) && Array.isArray(b))
+				return (a as unknown[]).concat(b as unknown[]);
+			if (typeof a === "object" && a && typeof b === "object" && b)
+				return Object.assign(a, b);
+			return b;
+		},
+		(data as unknown[])[0] ?? null,
+	);
+}
+
+function evalRecurse(data: unknown): unknown[] {
+	const out: unknown[] = [];
+	const stack: unknown[] = [data];
+	while (stack.length > 0) {
+		const v: unknown = stack.pop();
+		out.push(v);
+		if (Array.isArray(v)) {
+			for (let i = v.length - 1; i >= 0; i--) stack.push(v[i]);
+		} else if (v && typeof v === "object") {
+			const vals = Object.values(v);
+			for (let i = vals.length - 1; i >= 0; i--) stack.push(vals[i]);
+		}
+	}
+	return out;
+}
+
+function evalSortBy(field: string, data: unknown): unknown[] {
+	return [...(Array.isArray(data) ? data : [])].sort((a, b) => {
+		const av = (a as Record<string, unknown>)[field] as string | number;
+		const bv = (b as Record<string, unknown>)[field] as string | number;
+		if (av < bv) return -1;
+		if (av > bv) return 1;
+		return 0;
+	});
+}
+
+function evalGroupBy(field: string, data: unknown): unknown[] {
+	const groups: Record<string, unknown[]> = {};
+	for (const item of Array.isArray(data) ? data : []) {
+		const k = String((item as Record<string, unknown>)[field]);
+		if (!groups[k]) groups[k] = [];
+		groups[k].push(item);
+	}
+	return Object.values(groups);
+}
+
+function evalUniqueBy(field: string, data: unknown): unknown[] {
+	const seen = new Set<string>();
+	return (Array.isArray(data) ? data : []).filter((item) => {
+		const k = String((item as Record<string, unknown>)[field]);
+		if (seen.has(k)) return false;
+		seen.add(k);
+		return true;
+	});
+}
+
+function evalMapValues(subExpr: string, data: unknown): unknown {
+	if (Array.isArray(data)) return data.map((i) => run(subExpr, i));
+	const o: Record<string, unknown> = {};
+	for (const [k, v] of Object.entries(
+		(data ?? {}) as Record<string, unknown>,
+	)) {
+		o[k] = run(subExpr, v);
+	}
+	return o;
+}
+
+// ─── path helpers ───────────────────────────────────────────────────────────
+
+function parseKeyToken(path: string, i: number): { val: string; next: number } {
+	const dot = path.indexOf(".", i);
+	const bracket = path.indexOf("[", i);
+	let end = path.length;
+	if (dot !== -1 && dot < end) end = dot;
+	if (bracket !== -1 && bracket < end) end = bracket;
+	const next = path[end] === "." ? end + 1 : end;
+	return { val: path.slice(i, end), next };
+}
+
+function parsePathTokens(
+	path: string,
+): Array<{ type: "idx" | "key"; val: string }> {
+	const tokens: Array<{ type: "idx" | "key"; val: string }> = [];
+	let i = 0;
+	while (i < path.length) {
+		if (path[i] === "[") {
+			const close = path.indexOf("]", i);
+			tokens.push({ type: "idx", val: path.slice(i + 1, close) });
+			i = close + 1;
+			if (path[i] === ".") i++;
+		} else {
+			const { val, next } = parseKeyToken(path, i);
+			if (val) tokens.push({ type: "key", val });
+			i = next;
+		}
+	}
+	return tokens;
+}
+
+function resolveToken(
+	t: { type: "idx" | "key"; val: string },
+	cur: unknown,
+): unknown {
+	if (t.type !== "idx") return (cur as Record<string, unknown>)[t.val];
+	if (t.val === "") {
+		return Array.isArray(cur) ? cur : Object.values(cur as object);
+	}
+	const idx = Number.isNaN(Number(t.val))
+		? t.val.replaceAll('"', "")
+		: Number(t.val);
+	return (cur as Record<string | number, unknown>)[idx];
+}
+
+// ─── sub-evaluators ─────────────────────────────────────────────────────────
+
+function evalStructural(expr: string, data: unknown): unknown {
 	// pipe
 	if (expr.includes("|")) {
 		const parts = splitPipe(expr);
@@ -16,7 +195,7 @@ function run(expr: string, data: unknown): unknown {
 		throw new Error("not iterable");
 	}
 
-	// construct object  { a, b.c as b }
+	// construct object { a, b.c as b }
 	if (expr.startsWith("{") && expr.endsWith("}")) {
 		return buildObj(expr.slice(1, -1).trim(), data);
 	}
@@ -32,6 +211,30 @@ function run(expr: string, data: unknown): unknown {
 	const commas = splitComma(expr);
 	if (commas.length > 1) return commas.map((e) => run(e.trim(), data));
 
+	return UNHANDLED;
+}
+
+function evalKeyword(expr: string, data: unknown): unknown {
+	if (expr === "not") return !data;
+	if (expr === "keys") return Object.keys((data ?? {}) as object);
+	if (expr === "values") return Object.values((data ?? {}) as object);
+	if (expr === "length") return evalLength(data);
+	if (expr === "type") return getType(data);
+	if (expr === "to_entries")
+		return Object.entries((data ?? {}) as Record<string, unknown>).map(
+			([k, v]) => ({ key: k, value: v }),
+		);
+	if (expr === "from_entries") return evalFromEntries(data);
+	if (expr === "add") return evalAdd(data);
+	if (expr === "recurse" || expr === "..") return evalRecurse(data);
+	if (expr === "ascii_downcase") return String(data).toLowerCase();
+	if (expr === "ascii_upcase") return String(data).toUpperCase();
+	if (expr === "tostring") return String(data);
+	if (expr === "tonumber") return Number(data);
+	return UNHANDLED;
+}
+
+function evalFuncExpr(expr: string, data: unknown): unknown {
 	// select()
 	const selM = /^select\((.+)\)$/.exec(expr);
 	if (selM) {
@@ -42,36 +245,6 @@ function run(expr: string, data: unknown): unknown {
 	// has()
 	const hasM = /^has\("(.+)"\)$/.exec(expr);
 	if (hasM) return Object.hasOwn(data ?? {}, hasM[1]);
-
-	// keys / values / length / type
-	if (expr === "keys") return Object.keys((data ?? {}) as object);
-	if (expr === "values") return Object.values((data ?? {}) as object);
-	if (expr === "length") {
-		if (Array.isArray(data)) return data.length;
-		if (typeof data === "string") return data.length;
-		if (typeof data === "object" && data) return Object.keys(data).length;
-		return 0;
-	}
-	if (expr === "type")
-		return Array.isArray(data) ? "array" : data === null ? "null" : typeof data;
-
-	// to_entries / from_entries
-	if (expr === "to_entries")
-		return Object.entries((data ?? {}) as Record<string, unknown>).map(
-			([k, v]) => ({
-				key: k,
-				value: v,
-			}),
-		);
-	if (expr === "from_entries") {
-		const o: Record<string, unknown> = {};
-		(
-			(data ?? []) as Array<{ key?: string; name?: string; value: unknown }>
-		).forEach((e) => {
-			o[e.key ?? e.name ?? ""] = e.value;
-		});
-		return o;
-	}
 
 	// map()
 	const mapM = /^map\((.+)\)$/.exec(expr);
@@ -84,110 +257,7 @@ function run(expr: string, data: unknown): unknown {
 
 	// map_values()
 	const mvM = /^map_values\((.+)\)$/.exec(expr);
-	if (mvM) {
-		if (Array.isArray(data)) return data.map((i) => run(mvM[1], i));
-		const o: Record<string, unknown> = {};
-		Object.entries((data ?? {}) as Record<string, unknown>).forEach(
-			([k, v]) => {
-				o[k] = run(mvM[1], v);
-			},
-		);
-		return o;
-	}
-
-	// sort_by()
-	const sbM = /^sort_by\((.+)\)$/i.exec(expr);
-	if (sbM) {
-		const field = sbM[1].trim().replace(/^\./, "");
-		return [...(Array.isArray(data) ? data : [])].sort((a, b) => {
-			const av = (a as Record<string, unknown>)[field] as string | number;
-			const bv = (b as Record<string, unknown>)[field] as string | number;
-			if (av < bv) return -1;
-			if (av > bv) return 1;
-			return 0;
-		});
-	}
-
-	// group_by()
-	const gbM = /^group_by\((.+)\)$/.exec(expr);
-	if (gbM) {
-		const field = gbM[1].trim().replace(/^\./, "");
-		const groups: Record<string, unknown[]> = {};
-		(Array.isArray(data) ? data : []).forEach((i) => {
-			const k = String((i as Record<string, unknown>)[field]);
-			if (!groups[k]) groups[k] = [];
-			groups[k].push(i);
-		});
-		return Object.values(groups);
-	}
-
-	// unique_by()
-	const ubM = /^unique_by\((.+)\)$/.exec(expr);
-	if (ubM) {
-		const field = ubM[1].trim().replace(/^\./, "");
-		const seen = new Set<string>();
-		return (Array.isArray(data) ? data : []).filter((i) => {
-			const k = String((i as Record<string, unknown>)[field]);
-			if (seen.has(k)) return false;
-			seen.add(k);
-			return true;
-		});
-	}
-
-	// add
-	if (expr === "add") {
-		if (!Array.isArray(data)) return null;
-		return data.reduce((a: unknown, b: unknown) => {
-			if (typeof a === "number" && typeof b === "number") return a + b;
-			if (typeof a === "string") return String(a) + String(b);
-			if (Array.isArray(a) && Array.isArray(b))
-				return (a as unknown[]).concat(b as unknown[]);
-			if (typeof a === "object" && a && typeof b === "object" && b)
-				return Object.assign(a, b);
-			return b;
-		}, data[0] ?? null);
-	}
-
-	// not
-	if (expr === "not") return !data;
-
-	// ascii_downcase / upcase
-	if (expr === "ascii_downcase") return String(data).toLowerCase();
-	if (expr === "ascii_upcase") return String(data).toUpperCase();
-
-	// ltrimstr / rtrimstr
-	const ltM = /^ltrimstr\("(.*)"\)$/.exec(expr);
-	if (ltM)
-		return String(data).startsWith(ltM[1])
-			? String(data).slice(ltM[1].length)
-			: data;
-	const rtM = /^rtrimstr\("(.*)"\)$/.exec(expr);
-	if (rtM)
-		return String(data).endsWith(rtM[1])
-			? String(data).slice(0, -rtM[1].length)
-			: data;
-
-	// split / join
-	const spM = /^split\("(.*)"\)$/.exec(expr);
-	if (spM) return String(data).split(spM[1]);
-	const jnM = /^join\("(.*)"\)$/.exec(expr);
-	if (jnM) return (Array.isArray(data) ? data : []).join(jnM[1]);
-
-	// tostring / tonumber
-	if (expr === "tostring") return String(data);
-	if (expr === "tonumber") return Number(data);
-
-	// recurse / ..
-	if (expr === "recurse" || expr === "..") {
-		const out: unknown[] = [];
-		function walk(v: unknown) {
-			out.push(v);
-			if (Array.isArray(v)) v.forEach(walk);
-			else if (v && typeof v === "object") Object.values(v).forEach(walk);
-		}
-		walk(data);
-		return out;
-	}
+	if (mvM) return evalMapValues(mvM[1], data);
 
 	// if-then-else
 	const ifM = /^if\s+(.+?)\s+then\s+(.+?)(?:\s+else\s+(.+?))?\s+end$/.exec(
@@ -198,10 +268,50 @@ function run(expr: string, data: unknown): unknown {
 		return run(cond ? ifM[2] : (ifM[3] ?? "."), data);
 	}
 
+	return UNHANDLED;
+}
+
+function evalPatternOp(expr: string, data: unknown): unknown {
+	// sort_by()
+	const sbM = /^sort_by\((.+)\)$/i.exec(expr);
+	if (sbM) return evalSortBy(sbM[1].trim().replace(/^\./, ""), data);
+
+	// group_by()
+	const gbM = /^group_by\((.+)\)$/.exec(expr);
+	if (gbM) return evalGroupBy(gbM[1].trim().replace(/^\./, ""), data);
+
+	// unique_by()
+	const ubM = /^unique_by\((.+)\)$/.exec(expr);
+	if (ubM) return evalUniqueBy(ubM[1].trim().replace(/^\./, ""), data);
+
+	// ltrimstr()
+	const ltM = /^ltrimstr\("(.*)"\)$/.exec(expr);
+	if (ltM)
+		return String(data).startsWith(ltM[1])
+			? String(data).slice(ltM[1].length)
+			: data;
+
+	// rtrimstr()
+	const rtM = /^rtrimstr\("(.*)"\)$/.exec(expr);
+	if (rtM)
+		return String(data).endsWith(rtM[1])
+			? String(data).slice(0, -rtM[1].length)
+			: data;
+
+	// split()
+	const spM = /^split\("(.*)"\)$/.exec(expr);
+	if (spM) return String(data).split(spM[1]);
+
+	// join()
+	const jnM = /^join\("(.*)"\)$/.exec(expr);
+	if (jnM) return (Array.isArray(data) ? data : []).join(jnM[1]);
+
+	return UNHANDLED;
+}
+
+function evalPathOrLiteral(expr: string, data: unknown): unknown {
 	// .key.sub.path and .key[0].sub
-	if (expr.startsWith(".")) {
-		return pathGet(expr.slice(1), data);
-	}
+	if (expr.startsWith(".")) return pathGet(expr.slice(1), data);
 
 	// string literal
 	if (expr.startsWith('"') && expr.endsWith('"')) return expr.slice(1, -1);
@@ -218,51 +328,35 @@ function run(expr: string, data: unknown): unknown {
 	throw new Error(`Unknown: ${expr}`);
 }
 
+// ─── main entry point ────────────────────────────────────────────────────────
+
+function run(expr: string, data: unknown): unknown {
+	expr = expr.trim();
+	if (!expr || expr === ".") return data;
+	const r1 = evalStructural(expr, data);
+	if (r1 !== UNHANDLED) return r1;
+	const r2 = evalKeyword(expr, data);
+	if (r2 !== UNHANDLED) return r2;
+	const r3 = evalFuncExpr(expr, data);
+	if (r3 !== UNHANDLED) return r3;
+	const r4 = evalPatternOp(expr, data);
+	if (r4 !== UNHANDLED) return r4;
+	return evalPathOrLiteral(expr, data);
+}
+
+// ─── path resolution ─────────────────────────────────────────────────────────
+
 function pathGet(path: string, data: unknown): unknown {
 	if (!path) return data;
 	let cur = data;
-	const tokens: Array<{ type: "idx" | "key"; val: string }> = [];
-	let i = 0;
-	while (i < path.length) {
-		if (path[i] === "[") {
-			const close = path.indexOf("]", i);
-			tokens.push({ type: "idx", val: path.slice(i + 1, close) });
-			i = close + 1;
-			if (path[i] === ".") i++;
-		} else {
-			const dot = path.indexOf(".", i);
-			const bracket = path.indexOf("[", i);
-			let end = path.length;
-			if (dot !== -1 && dot < end) end = dot;
-			if (bracket !== -1 && bracket < end) end = bracket;
-			const key = path.slice(i, end);
-			if (key) tokens.push({ type: "key", val: key });
-			i = end;
-			if (path[i] === ".") i++;
-		}
-	}
-	for (const t of tokens) {
+	for (const t of parsePathTokens(path)) {
 		if (cur == null) return null;
-		if (t.type === "idx") {
-			let idx: number | string | null;
-			if (t.val === "") idx = null;
-			else if (Number.isNaN(Number(t.val))) {
-				idx = t.val.replaceAll('"', "");
-			} else {
-				idx = Number(t.val);
-			}
-			cur =
-				idx === null
-					? Array.isArray(cur)
-						? cur
-						: Object.values(cur as object)
-					: (cur as Record<string | number, unknown>)[idx];
-		} else {
-			cur = (cur as Record<string, unknown>)[t.val];
-		}
+		cur = resolveToken(t, cur);
 	}
 	return cur ?? null;
 }
+
+// ─── condition evaluator ─────────────────────────────────────────────────────
 
 function evalCond(expr: string, data: unknown): boolean {
 	const cmp = /^(.+?)\s*(==|!=|>=|<=|>|<)\s*(.+)$/.exec(expr);
@@ -276,7 +370,7 @@ function evalCond(expr: string, data: unknown): boolean {
 		else if (!Number.isNaN(Number(rv as string))) rv = Number(rv as string);
 		switch (cmp[2]) {
 			case "==":
-				return String(lv) === String(rv) || lv === rv; // loose equality for jq semantics
+				return String(lv) === String(rv) || lv === rv;
 			case "!=":
 				return String(lv) !== String(rv) && lv !== rv;
 			case ">":
@@ -292,6 +386,8 @@ function evalCond(expr: string, data: unknown): boolean {
 	return !!run(expr, data);
 }
 
+// ─── object builder ──────────────────────────────────────────────────────────
+
 function buildObj(inner: string, data: unknown): unknown {
 	const o: Record<string, unknown> = {};
 	splitComma(inner).forEach((entry) => {
@@ -306,48 +402,6 @@ function buildObj(inner: string, data: unknown): unknown {
 		}
 	});
 	return o;
-}
-
-function splitPipe(expr: string): string[] {
-	const parts: string[] = [];
-	let depth = 0,
-		str = false,
-		buf = "";
-	for (let i = 0; i < expr.length; i++) {
-		const c = expr[i];
-		if (c === '"' && expr[i - 1] !== "\\") str = !str;
-		if (!str) {
-			if ("([{".includes(c)) depth++;
-			if (")]}".includes(c)) depth--;
-		}
-		if (!str && depth === 0 && c === "|") {
-			parts.push(buf);
-			buf = "";
-		} else buf += c;
-	}
-	parts.push(buf);
-	return parts;
-}
-
-function splitComma(expr: string): string[] {
-	const parts: string[] = [];
-	let depth = 0,
-		str = false,
-		buf = "";
-	for (let i = 0; i < expr.length; i++) {
-		const c = expr[i];
-		if (c === '"' && expr[i - 1] !== "\\") str = !str;
-		if (!str) {
-			if ("([{".includes(c)) depth++;
-			if (")]}".includes(c)) depth--;
-		}
-		if (!str && depth === 0 && c === ",") {
-			parts.push(buf);
-			buf = "";
-		} else buf += c;
-	}
-	parts.push(buf);
-	return parts;
 }
 
 export const jq = { run };

@@ -19,11 +19,10 @@ export function SearchBar({
 	onCaseSenToggle,
 	onStepMatch,
 }: Readonly<SearchBarProps>) {
-	const meta = query
-		? matchCount > 0
-			? `${matchIdx + 1} / ${matchCount}`
-			: "no matches"
-		: "";
+	let meta = "";
+	if (query) {
+		meta = matchCount > 0 ? `${matchIdx + 1} / ${matchCount}` : "no matches";
+	}
 
 	return (
 		<div className="searchbar">
