@@ -109,9 +109,7 @@ function inferObjectShape(
 			if (hasNull) type = `${type} | null`;
 		}
 
-		// Mark optional if missing from some items OR if it has null values alongside non-null values
-		const effectivelyOptional = optional || (hasNull && nonNull.length > 0);
-		lines.push(`  ${key}${effectivelyOptional ? "?" : ""}: ${type}`);
+		lines.push(`  ${key}${optional ? "?" : ""}: ${type}`);
 	}
 
 	return lines.join("\n");

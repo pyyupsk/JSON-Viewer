@@ -143,7 +143,7 @@ describe("jsonToTs", () => {
 				"Users",
 				false,
 			);
-			expect(result).toContain("email?: string | null");
+			expect(result).toContain("email: string | null");
 		});
 
 		it("falls back to null when no inference is possible", () => {
