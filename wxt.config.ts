@@ -3,6 +3,9 @@ import { defineConfig } from "wxt";
 export default defineConfig({
 	modules: ["@wxt-dev/module-react"],
 	manifest: {
+		name: "JSON Viewer",
+		description:
+			"A browser extension that beautifully formats and displays JSON responses.",
 		permissions: ["clipboardWrite"],
 	},
 	webExt: {

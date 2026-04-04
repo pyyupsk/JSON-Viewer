@@ -1,8 +1,23 @@
 {
 	"name": "json-viewer",
-	"description": "manifest.json description",
-	"private": true,
+	"displayName": "JSON Viewer",
+	"description": "A browser extension that beautifully formats and displays JSON responses.",
 	"version": "0.0.0",
+	"private": true,
+	"author": {
+		"name": "Pongsakorn Thipayanate",
+		"url": "https://github.com/pyyupsk"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/pyyupsk/json-viewer"
+	},
+	"bugs": {
+		"url": "https://github.com/pyyupsk/json-viewer/issues"
+	},
+	"homepage": "https://github.com/pyyupsk/json-viewer#readme",
+	"keywords": ["json", "viewer", "formatter", "browser-extension"],
+	"license": "MIT",
 	"type": "module",
 	"scripts": {
 		"build": "wxt build",
