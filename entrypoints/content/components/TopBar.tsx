@@ -21,8 +21,8 @@ export function TopBar({
 	return (
 		<div className="topbar">
 			<span className="logo">
-				<img src={logoUrl} alt="" aria-hidden="true" width={20} height={20} /> JSON
-				Viewer
+				<img src={logoUrl} alt="" aria-hidden="true" width={20} height={20} />{" "}
+				JSON Viewer
 			</span>
 			<div className="sep" />
 			<div className="tab-group">
