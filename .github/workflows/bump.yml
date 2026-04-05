@@ -1,8 +1,6 @@
 name: Version Bump
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       bump:
@@ -19,10 +17,6 @@ permissions:
   contents: write
   pull-requests: write
 
-concurrency:
-  group: bump-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   bump:
     name: Bump Version
@@ -30,48 +24,16 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: Check if release commit
-        id: guard
-        env:
-          ACTOR: ${{ github.actor }}
-        run: |
-          if [[ "$ACTOR" == "github-actions[bot]" ]]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Checkout
-        if: steps.guard.outputs.skip == 'false'
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Get merged PR bump label
-        if: steps.guard.outputs.skip == 'false'
-        id: labels
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DISPATCH_BUMP: ${{ inputs.bump }}
-        run: |
-          if [ -n "$DISPATCH_BUMP" ]; then
-            echo "bump=$DISPATCH_BUMP" >> $GITHUB_OUTPUT
-          else
-            LABELS=$(gh api "/repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
-              --jq '.[0].labels[].name' 2>/dev/null || echo "")
-
-            if echo "$LABELS" | grep -qx "major"; then
-              echo "bump=major" >> $GITHUB_OUTPUT
-            elif echo "$LABELS" | grep -qx "minor"; then
-              echo "bump=minor" >> $GITHUB_OUTPUT
-            else
-              echo "bump=patch" >> $GITHUB_OUTPUT
-            fi
-          fi
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       - name: Calculate new version
-        if: steps.guard.outputs.skip == 'false'
         id: version
         env:
-          BUMP: ${{ steps.labels.outputs.bump }}
+          BUMP: ${{ inputs.bump }}
         run: |
           CURRENT=$(jq -r '.version' package.json)
           NEW=$(CURRENT="$CURRENT" node -e "
@@ -84,8 +46,7 @@ jobs:
           echo "new_version=$NEW" >> $GITHUB_OUTPUT
           echo "branch=release/v$NEW" >> $GITHUB_OUTPUT
 
-      - name: Check if bump branch already exists
-        if: steps.guard.outputs.skip == 'false'
+      - name: Check if branch already exists
         id: branch_check
         env:
           BRANCH: ${{ steps.version.outputs.branch }}
@@ -96,33 +57,34 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Bump package.json version
-        if: steps.guard.outputs.skip == 'false' && steps.branch_check.outputs.exists == 'false'
+      - name: Bump version and update lockfile
+        if: steps.branch_check.outputs.exists == 'false'
         env:
           NEW: ${{ steps.version.outputs.new_version }}
         run: |
           jq --tab --arg v "$NEW" '.version = $v' package.json > package.json.tmp
           mv package.json.tmp package.json
+          bun install
 
       - name: Configure git
-        if: steps.guard.outputs.skip == 'false' && steps.branch_check.outputs.exists == 'false'
+        if: steps.branch_check.outputs.exists == 'false'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Commit and push bump branch
-        if: steps.guard.outputs.skip == 'false' && steps.branch_check.outputs.exists == 'false'
+      - name: Commit and push release branch
+        if: steps.branch_check.outputs.exists == 'false'
         env:
           BRANCH: ${{ steps.version.outputs.branch }}
           NEW: ${{ steps.version.outputs.new_version }}
         run: |
           git checkout -b "$BRANCH"
-          git add package.json
+          git add package.json bun.lockb
           git commit -m "chore: release v$NEW"
           git push origin "$BRANCH"
 
       - name: Ensure autorelease label exists
-        if: steps.guard.outputs.skip == 'false' && steps.branch_check.outputs.exists == 'false'
+        if: steps.branch_check.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -132,11 +94,11 @@ jobs:
             --force
 
       - name: Open release PR
-        if: steps.guard.outputs.skip == 'false' && steps.branch_check.outputs.exists == 'false'
+        if: steps.branch_check.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEW: ${{ steps.version.outputs.new_version }}
-          BUMP: ${{ steps.labels.outputs.bump }}
+          BUMP: ${{ inputs.bump }}
         run: |
           gh pr create \
             --title "chore: release v$NEW" \
