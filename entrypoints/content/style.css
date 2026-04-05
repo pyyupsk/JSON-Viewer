@@ -719,3 +719,18 @@
 	background: var(--sel-bg);
 	color: var(--text);
 }
+
+.error-boundary {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 24px;
+	color: var(--text);
+	font-family: var(--ui);
+}
+
+.error-boundary pre {
+	color: var(--muted);
+	font-size: 12px;
+	white-space: pre-wrap;
+}

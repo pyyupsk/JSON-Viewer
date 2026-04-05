@@ -1,14 +1,9 @@
+import { ReadOnlyTextarea } from "./ReadOnlyTextarea";
+
 interface RawViewProps {
 	content: string;
 }
 
 export function RawView({ content }: Readonly<RawViewProps>) {
-	return (
-		<textarea
-			className="raw-area"
-			readOnly
-			value={content}
-			spellCheck={false}
-		/>
-	);
+	return <ReadOnlyTextarea value={content} />;
 }
