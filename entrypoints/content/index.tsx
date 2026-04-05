@@ -1,5 +1,6 @@
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import styles from "./style.css?inline";
 
 async function detectJson(): Promise<string | null> {
@@ -29,6 +30,7 @@ async function detectJson(): Promise<string | null> {
 export default defineContentScript({
 	matches: ["*://*/*"],
 	cssInjectionMode: "manual",
+	runAt: "document_start",
 
 	async main() {
 		const mightBeJson =
@@ -36,6 +38,14 @@ export default defineContentScript({
 			document.contentType === "text/plain" ||
 			document.contentType === "text/html";
 		if (mightBeJson) document.documentElement.style.opacity = "0";
+
+		if (document.readyState === "loading") {
+			await new Promise<void>((resolve) =>
+				document.addEventListener("DOMContentLoaded", () => resolve(), {
+					once: true,
+				}),
+			);
+		}
 
 		const raw = await detectJson();
 
@@ -62,7 +72,11 @@ export default defineContentScript({
 		container.style.cssText = "height:100%;";
 		document.body.appendChild(container);
 
-		ReactDOM.createRoot(container).render(<App rawJson={raw} />);
+		ReactDOM.createRoot(container).render(
+			<ErrorBoundary>
+				<App rawJson={raw} />
+			</ErrorBoundary>,
+		);
 		document.documentElement.style.opacity = "1";
 	},
 });

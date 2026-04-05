@@ -126,8 +126,10 @@ export function App({ rawJson }: AppProps) {
 			// Ctrl/Cmd+Shift+C → copy selected node or full JSON
 			if (mod && e.shiftKey && e.key === "C") {
 				e.preventDefault();
-				navigator.clipboard.writeText(getSelectedText()).catch(() => {});
-				showToast("Copied to clipboard");
+				navigator.clipboard
+					.writeText(getSelectedText())
+					.then(() => showToast("Copied to clipboard"))
+					.catch(() => showToast("Failed to copy"));
 			}
 		};
 		globalThis.addEventListener("keydown", handler);
@@ -171,17 +173,25 @@ export function App({ rawJson }: AppProps) {
 	const handleExpandAll = useCallback(() => setCollapsed(new Set()), []);
 
 	const handleCopyAll = useCallback(() => {
-		navigator.clipboard.writeText(rawStr).catch(() => {});
-		showToast("Copied to clipboard");
+		navigator.clipboard
+			.writeText(rawStr)
+			.then(() => showToast("Copied to clipboard"))
+			.catch(() => showToast("Failed to copy"));
 	}, [rawStr, showToast]);
 
-	const handleCopyVal = useCallback((val: unknown) => {
-		const text =
-			val !== null && typeof val === "object"
-				? JSON.stringify(val, null, 2)
-				: String(val as string | number | boolean | null | undefined);
-		navigator.clipboard.writeText(text).catch(() => {});
-	}, []);
+	const handleCopyVal = useCallback(
+		(val: unknown) => {
+			const text =
+				val !== null && typeof val === "object"
+					? JSON.stringify(val, null, 2)
+					: String(val as string | number | boolean | null | undefined);
+			navigator.clipboard
+				.writeText(text)
+				.then(() => showToast("Copied to clipboard"))
+				.catch(() => showToast("Failed to copy"));
+		},
+		[showToast],
+	);
 
 	const stepMatch = useCallback(
 		(dir: 1 | -1) => {
