@@ -10,7 +10,7 @@ export default defineConfig({
 		permissions: ["clipboardWrite"],
 	},
 	webExt: {
-		startUrls: ["https://jsonplaceholder.typicode.com/todos"],
+		startUrls: ["https://dummyjson.com/products"],
 	},
 	vite: () => ({
 		resolve: {
