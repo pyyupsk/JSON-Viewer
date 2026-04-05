@@ -8,6 +8,7 @@ import { Toast } from "@content/components/Toast";
 import { TopBar } from "@content/components/TopBar";
 import { TreeView } from "@content/components/TreeView";
 import { TypeScriptView } from "@content/components/TypeScriptView";
+import { TOAST_DURATION_MS } from "@content/constants";
 import { flattenData, rowSearchText } from "@content/lib/flatten";
 import { jq } from "@content/lib/jq";
 import { nameFromUrl } from "@content/lib/typescript";
@@ -76,7 +77,7 @@ export function App({ rawJson }: AppProps) {
 	const showToast = useCallback((msg: string) => {
 		setToast(msg);
 		if (toastTimer.current) clearTimeout(toastTimer.current);
-		toastTimer.current = setTimeout(() => setToast(null), 1800);
+		toastTimer.current = setTimeout(() => setToast(null), TOAST_DURATION_MS);
 	}, []);
 
 	const getSelectedText = useCallback(() => {
