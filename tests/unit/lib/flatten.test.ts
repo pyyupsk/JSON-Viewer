@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest";
 import {
 	type CloseRow,
 	flattenData,
 	type OpenRow,
 	type PrimRow,
 	rowSearchText,
-} from "../../entrypoints/content/flatten";
+} from "@content/lib/flatten";
+import { describe, expect, it } from "vitest";
 
 describe("flattenData", () => {
 	it("flattens a primitive value", () => {

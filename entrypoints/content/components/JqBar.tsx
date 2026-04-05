@@ -1,4 +1,4 @@
-import { suggest } from "../jq";
+import { suggest } from "@content/lib/jq";
 import { CopiedIcon, InvalidIcon, RunIcon } from "./Icons";
 
 interface JqBarProps {

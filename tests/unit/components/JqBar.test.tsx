@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
+import { JqBar } from "@content/components/JqBar";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { JqBar } from "../../entrypoints/content/components/JqBar";
 
 const baseProps = {
 	expr: "",

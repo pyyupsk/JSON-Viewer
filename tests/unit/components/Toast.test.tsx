@@ -1,6 +1,6 @@
+import { Toast } from "@content/components/Toast";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { Toast } from "../../entrypoints/content/components/Toast";
 
 describe("Toast", () => {
 	it("renders with no message", () => {

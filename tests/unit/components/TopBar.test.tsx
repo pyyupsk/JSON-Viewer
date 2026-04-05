@@ -1,6 +1,6 @@
+import { TopBar } from "@content/components/TopBar";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { TopBar } from "../../entrypoints/content/components/TopBar";
 
 const defaultProps = {
 	tab: "tree" as const,

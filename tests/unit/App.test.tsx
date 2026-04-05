@@ -1,3 +1,4 @@
+import { App } from "@content/App";
 import {
 	act,
 	fireEvent,
@@ -6,7 +7,6 @@ import {
 	within,
 } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { App } from "../../entrypoints/content/App";
 
 const validJson =
 	'{"name": "Alice", "items": [1, 2, 3], "nested": {"x": true}}';

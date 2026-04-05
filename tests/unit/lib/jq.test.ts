@@ -1,5 +1,5 @@
+import { jq, suggest } from "@content/lib/jq";
 import { describe, expect, it } from "vitest";
-import { jq, suggest } from "../../entrypoints/content/jq";
 
 const run = jq.run.bind(jq);
 

@@ -1,5 +1,5 @@
+import { jsonToTs, nameFromUrl } from "@content/lib/typescript";
 import { describe, expect, it } from "vitest";
-import { jsonToTs, nameFromUrl } from "../../entrypoints/content/typescript";
 
 describe("nameFromUrl", () => {
 	it("converts last path segment to PascalCase", () => {

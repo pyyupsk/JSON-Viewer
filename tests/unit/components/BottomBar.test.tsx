@@ -1,6 +1,6 @@
+import { BottomBar } from "@content/components/BottomBar";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { BottomBar } from "../../entrypoints/content/components/BottomBar";
 
 describe("BottomBar", () => {
 	it("renders valid state", () => {

@@ -1,7 +1,7 @@
+import { TreeView } from "@content/components/TreeView";
+import type { Row } from "@content/lib/flatten";
 import { act, fireEvent, render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { TreeView } from "../../entrypoints/content/components/TreeView";
-import type { Row } from "../../entrypoints/content/flatten";
 
 const defaultProps = {
 	rows: [] as Row[],

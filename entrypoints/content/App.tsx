@@ -1,18 +1,18 @@
+import { BottomBar } from "@content/components/BottomBar";
+import { JqBar } from "@content/components/JqBar";
+import { JqResultView } from "@content/components/JqResultView";
+import { MinifyView } from "@content/components/MinifyView";
+import { RawView } from "@content/components/RawView";
+import { SearchBar } from "@content/components/SearchBar";
+import { Toast } from "@content/components/Toast";
+import { TopBar } from "@content/components/TopBar";
+import { TreeView } from "@content/components/TreeView";
+import { TypeScriptView } from "@content/components/TypeScriptView";
+import { flattenData, rowSearchText } from "@content/lib/flatten";
+import { jq } from "@content/lib/jq";
+import { nameFromUrl } from "@content/lib/typescript";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BottomBar } from "./components/BottomBar";
-import { JqBar } from "./components/JqBar";
-import { JqResultView } from "./components/JqResultView";
-import { MinifyView } from "./components/MinifyView";
-import { RawView } from "./components/RawView";
-import { SearchBar } from "./components/SearchBar";
-import { Toast } from "./components/Toast";
-import { TopBar } from "./components/TopBar";
-import { TreeView } from "./components/TreeView";
-import { flattenData, rowSearchText } from "./flatten";
-import { jq } from "./jq";
 import "./style.css";
-import { TypeScriptView } from "./components/TypeScriptView";
-import { nameFromUrl } from "./typescript";
 
 type Tab = "tree" | "raw" | "minify" | "jq" | "ts";
 
