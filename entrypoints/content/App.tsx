@@ -11,10 +11,9 @@ import { TypeScriptView } from "@content/components/TypeScriptView";
 import { flattenData, rowSearchText } from "@content/lib/flatten";
 import { jq } from "@content/lib/jq";
 import { nameFromUrl } from "@content/lib/typescript";
+import type { Tab } from "@content/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./style.css";
-
-type Tab = "tree" | "raw" | "minify" | "jq" | "ts";
 
 interface AppProps {
 	readonly rawJson: string;
