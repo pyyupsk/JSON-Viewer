@@ -79,7 +79,7 @@ jobs:
           NEW: ${{ steps.version.outputs.new_version }}
         run: |
           git checkout -b "$BRANCH"
-          git add package.json bun.lockb
+          git add package.json bun.lock
           git commit -m "chore: release v$NEW"
           git push origin "$BRANCH"
 
