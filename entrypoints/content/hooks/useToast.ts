@@ -1,5 +1,5 @@
 import { TOAST_DURATION_MS } from "@content/constants";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useToast(): {
 	toast: string | null;
@@ -12,6 +12,15 @@ export function useToast(): {
 		setToast(msg);
 		if (timer.current) clearTimeout(timer.current);
 		timer.current = setTimeout(() => setToast(null), TOAST_DURATION_MS);
+	}, []);
+
+	useEffect(() => {
+		return () => {
+			if (timer.current) {
+				clearTimeout(timer.current);
+				timer.current = null;
+			}
+		};
 	}, []);
 
 	return { toast, showToast };

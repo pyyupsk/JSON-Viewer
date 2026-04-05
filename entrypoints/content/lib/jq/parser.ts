@@ -7,7 +7,13 @@ export function splitOn(expr: string, sep: string): string[] {
 		buf = "";
 	for (let i = 0; i < expr.length; i++) {
 		const c = expr[i];
-		if (c === '"' && expr[i - 1] !== "\\") str = !str;
+		if (c === '"') {
+			let backslashCount = 0;
+			for (let j = i - 1; j >= 0 && expr[j] === "\\"; j--) {
+				backslashCount++;
+			}
+			if (backslashCount % 2 === 0) str = !str;
+		}
 		if (!str) depth = updateDepth(c, depth);
 		if (!str && depth === 0 && c === sep) {
 			parts.push(buf);

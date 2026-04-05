@@ -120,7 +120,10 @@ function evalCond(expr: string, data: unknown): boolean {
 				return (lv as number) <= (rv as number);
 		}
 	}
-	return !!run(expr, data);
+	const res = run(expr, data);
+	if (res === false || res === null) return false;
+	if (Array.isArray(res) && res.length === 0) return false;
+	return true;
 }
 
 // ─── object builder ──────────────────────────────────────────────────────────

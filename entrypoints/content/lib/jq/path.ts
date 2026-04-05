@@ -16,6 +16,9 @@ function parsePathTokens(
 	while (i < path.length) {
 		if (path[i] === "[") {
 			const close = path.indexOf("]", i);
+			if (close === -1) {
+				throw new Error("Unclosed '[' in path");
+			}
 			tokens.push({ type: "idx", val: path.slice(i + 1, close) });
 			i = close + 1;
 			if (path[i] === ".") i++;

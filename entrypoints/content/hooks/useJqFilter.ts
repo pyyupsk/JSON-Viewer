@@ -22,7 +22,7 @@ export function useJqFilter(data: unknown): {
 		}
 		try {
 			const result = jq.run(expr, data);
-			setJqResult(JSON.stringify(result, null, 2));
+			setJqResult(result === undefined ? null : JSON.stringify(result, null, 2));
 			setJqError(null);
 		} catch (e) {
 			setJqError((e as Error).message);
