@@ -1,7 +1,7 @@
+import { TreeRow } from "@content/components/TreeRow";
+import type { Row } from "@content/lib/flatten";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { TreeRow } from "../../entrypoints/content/components/TreeRow";
-import type { Row } from "../../entrypoints/content/flatten";
 
 const baseProps = {
 	lineNum: 1,

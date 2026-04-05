@@ -1,5 +1,5 @@
+import type { Row } from "@content/lib/flatten";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Row } from "../flatten";
 import { TreeRow } from "./TreeRow";
 
 const ROW_HEIGHT = 20; // matches --lh: 20px

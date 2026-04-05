@@ -1,6 +1,6 @@
+import { RawView } from "@content/components/RawView";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { RawView } from "../../entrypoints/content/components/RawView";
 
 describe("RawView", () => {
 	it("renders content in a readonly textarea", () => {

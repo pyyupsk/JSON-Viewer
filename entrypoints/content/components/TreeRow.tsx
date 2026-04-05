@@ -1,5 +1,5 @@
+import type { Row } from "@content/lib/flatten";
 import { useState } from "react";
-import type { Row } from "../flatten";
 import {
 	CollapseNodeIcon,
 	CopiedIcon,

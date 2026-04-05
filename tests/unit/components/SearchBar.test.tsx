@@ -1,6 +1,6 @@
+import { SearchBar } from "@content/components/SearchBar";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { SearchBar } from "../../entrypoints/content/components/SearchBar";
 
 const defaultProps = {
 	query: "",

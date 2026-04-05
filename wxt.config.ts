@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { defineConfig } from "wxt";
 
 export default defineConfig({
@@ -12,6 +13,11 @@ export default defineConfig({
 		startUrls: ["https://dummyjson.com/products"],
 	},
 	vite: () => ({
+		resolve: {
+			alias: {
+				"@content": resolve(__dirname, "entrypoints/content"),
+			},
+		},
 		build: {
 			// Source maps are required to map bundled coverage back to TypeScript source
 			sourcemap: process.env.E2E_COVERAGE === "1",

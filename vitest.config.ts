@@ -1,8 +1,14 @@
+import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 import { WxtVitest } from "wxt/testing";
 
 export default defineConfig({
 	plugins: [WxtVitest()],
+	resolve: {
+		alias: {
+			"@content": resolve(__dirname, "entrypoints/content"),
+		},
+	},
 	test: {
 		include: ["tests/unit/**/*.test.{ts,tsx}"],
 		environment: "happy-dom",

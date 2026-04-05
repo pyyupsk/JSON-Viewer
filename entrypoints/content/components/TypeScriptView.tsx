@@ -1,5 +1,5 @@
+import { jsonToTs } from "@content/lib/typescript";
 import { useState } from "react";
-import { jsonToTs } from "../typescript";
 
 interface TypeScriptViewProps {
 	data: unknown;

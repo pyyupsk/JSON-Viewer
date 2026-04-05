@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
+import { TypeScriptView } from "@content/components/TypeScriptView";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { TypeScriptView } from "../../entrypoints/content/components/TypeScriptView";
 
 const data = { name: "Alice", age: 30 };
 

@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import {
 	CollapseIcon,
 	CollapseNodeIcon,
@@ -11,7 +10,8 @@ import {
 	PrevIcon,
 	RunIcon,
 	ValidIcon,
-} from "../../entrypoints/content/components/Icons";
+} from "@content/components/Icons";
+import { describe, expect, it } from "vitest";
 
 describe("Icons", () => {
 	it("exports string constants", () => {

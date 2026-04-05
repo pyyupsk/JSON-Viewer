@@ -1,6 +1,6 @@
+import { MinifyView } from "@content/components/MinifyView";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { MinifyView } from "../../entrypoints/content/components/MinifyView";
 
 describe("MinifyView", () => {
 	it("renders minified JSON in a readonly textarea", () => {
