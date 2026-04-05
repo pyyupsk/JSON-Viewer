@@ -108,6 +108,9 @@
 }
 
 .logo {
+	display: flex;
+	align-items: center;
+	gap: 6px;
 	font-family: var(--mono);
 	font-size: 12px;
 	font-weight: 500;
