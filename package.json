@@ -2,7 +2,7 @@
 	"name": "json-viewer",
 	"displayName": "JSON Viewer",
 	"description": "A browser extension that beautifully formats and displays JSON responses.",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"private": true,
 	"author": {
 		"name": "Pongsakorn Thipayanate",
