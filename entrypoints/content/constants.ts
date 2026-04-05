@@ -1,0 +1,2 @@
+export const TOAST_DURATION_MS = 1800;
+export const COPY_FEEDBACK_DURATION_MS = 1200;

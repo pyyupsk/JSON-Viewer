@@ -8,13 +8,14 @@ import { Toast } from "@content/components/Toast";
 import { TopBar } from "@content/components/TopBar";
 import { TreeView } from "@content/components/TreeView";
 import { TypeScriptView } from "@content/components/TypeScriptView";
-import { flattenData, rowSearchText } from "@content/lib/flatten";
-import { jq } from "@content/lib/jq";
+import { useJqFilter } from "@content/hooks/useJqFilter";
+import { useSearch } from "@content/hooks/useSearch";
+import { useToast } from "@content/hooks/useToast";
+import { flattenData } from "@content/lib/flatten";
 import { nameFromUrl } from "@content/lib/typescript";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Tab } from "@content/types";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import "./style.css";
-
-type Tab = "tree" | "raw" | "minify" | "jq" | "ts";
 
 interface AppProps {
 	readonly rawJson: string;
@@ -34,37 +35,31 @@ export function App({ rawJson }: AppProps) {
 	const [tab, setTab] = useState<Tab>("tree");
 	const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 	const [selPath, setSelPath] = useState<string | null>(null);
-	const [searchQuery, setSearchQuery] = useState("");
-	const [caseSen, setCaseSen] = useState(false);
-	const [matchIdx, setMatchIdx] = useState(-1);
-	const [jqExpr, setJqExpr] = useState("");
-	const [jqResult, setJqResult] = useState<string | null>(null);
-	const [jqError, setJqError] = useState<string | null>(null);
-	const [toast, setToast] = useState<string | null>(null);
-	const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	// ── Derived ────────────────────────────────────────────────────────────────
+	// ── Hooks ──────────────────────────────────────────────────────────────────
+	const { toast, showToast } = useToast();
+
 	const rows = useMemo(
 		() => (data === null ? [] : flattenData(data, collapsed)),
 		[data, collapsed],
 	);
 
-	const matches = useMemo<string[]>(() => {
-		if (!searchQuery) return [];
-		const q = caseSen ? searchQuery : searchQuery.toLowerCase();
-		return rows
-			.filter((row) => {
-				const text = caseSen
-					? rowSearchText(row)
-					: rowSearchText(row).toLowerCase();
-				return text.includes(q);
-			})
-			.map((row) => row.path);
-	}, [rows, searchQuery, caseSen]);
+	const {
+		searchQuery,
+		caseSen,
+		matchIdx,
+		matches,
+		matchSet,
+		focusPath,
+		setSearchQuery,
+		setCaseSen,
+		stepMatch,
+	} = useSearch(rows);
 
-	const matchSet = useMemo(() => new Set(matches), [matches]);
-	const focusPath = matches[matchIdx] ?? null;
+	const { jqExpr, jqResult, jqError, setJqExpr, handleJqEval, handleJqEscape } =
+		useJqFilter(data);
 
+	// ── Derived ────────────────────────────────────────────────────────────────
 	const rawStr = useMemo(
 		() => JSON.stringify(data, null, 2) ?? rawJson,
 		[data, rawJson],
@@ -72,13 +67,7 @@ export function App({ rawJson }: AppProps) {
 	const sizeKb = (rawJson.length / 1024).toFixed(1);
 	const tsName = useMemo(() => nameFromUrl(globalThis.location.pathname), []);
 
-	// ── Handlers ── (showToast declared early; used in keyboard shortcut effect below) ──
-
-	const showToast = useCallback((msg: string) => {
-		setToast(msg);
-		if (toastTimer.current) clearTimeout(toastTimer.current);
-		toastTimer.current = setTimeout(() => setToast(null), 1800);
-	}, []);
+	// ── Handlers ──────────────────────────────────────────────────────────────
 
 	const getSelectedText = useCallback(() => {
 		if (!selPath) return rawStr;
@@ -89,29 +78,11 @@ export function App({ rawJson }: AppProps) {
 		return rawStr;
 	}, [selPath, rows, rawStr]);
 
-	// ── Effects ────────────────────────────────────────────────────────────────
-
-	// Reset match index when search results change
-	useEffect(() => {
-		setMatchIdx(matches.length > 0 ? 0 : -1);
-	}, [matches]);
-
-	// Scroll focused match into view
-	useEffect(() => {
-		if (focusPath) {
-			document.querySelector(".row.hit-focus")?.scrollIntoView({
-				block: "center",
-				behavior: "smooth",
-			});
-		}
-	}, [focusPath]);
-
 	// Global keyboard shortcuts
 	useEffect(() => {
 		const handler = (e: KeyboardEvent) => {
 			const mod = e.ctrlKey || e.metaKey;
 
-			// Ctrl/Cmd+F → focus search
 			if (mod && e.key === "f") {
 				e.preventDefault();
 				if (tab === "jq") setTab("tree");
@@ -123,7 +94,6 @@ export function App({ rawJson }: AppProps) {
 				return;
 			}
 
-			// Ctrl/Cmd+Shift+C → copy selected node or full JSON
 			if (mod && e.shiftKey && e.key === "C") {
 				e.preventDefault();
 				navigator.clipboard
@@ -135,8 +105,6 @@ export function App({ rawJson }: AppProps) {
 		globalThis.addEventListener("keydown", handler);
 		return () => globalThis.removeEventListener("keydown", handler);
 	}, [tab, getSelectedText, showToast]);
-
-	// ── Remaining handlers ────────────────────────────────────────────────────
 
 	const handleToggle = useCallback((path: string) => {
 		setCollapsed((prev) => {
@@ -193,37 +161,10 @@ export function App({ rawJson }: AppProps) {
 		[showToast],
 	);
 
-	const stepMatch = useCallback(
-		(dir: 1 | -1) => {
-			if (!matches.length) return;
-			setMatchIdx((prev) => (prev + dir + matches.length) % matches.length);
-		},
-		[matches],
-	);
-
-	const handleJqEval = useCallback(() => {
-		const expr = jqExpr.trim();
-		if (!expr || expr === ".") {
-			setJqResult(null);
-			setJqError(null);
-			return;
-		}
-		try {
-			const result = jq.run(expr, data);
-			setJqResult(JSON.stringify(result, null, 2));
-			setJqError(null);
-		} catch (e) {
-			setJqError((e as Error).message);
-			setJqResult(null);
-		}
-	}, [jqExpr, data]);
-
-	const handleJqEscape = useCallback(() => {
-		setJqExpr("");
-		setJqResult(null);
-		setJqError(null);
+	const onJqEscape = useCallback(() => {
+		handleJqEscape();
 		setTab("tree");
-	}, []);
+	}, [handleJqEscape]);
 
 	// ── Render ─────────────────────────────────────────────────────────────────
 
@@ -275,7 +216,7 @@ export function App({ rawJson }: AppProps) {
 					data={data}
 					onExprChange={setJqExpr}
 					onRun={handleJqEval}
-					onEscape={handleJqEscape}
+					onEscape={onJqEscape}
 				/>
 			) : (
 				<SearchBar

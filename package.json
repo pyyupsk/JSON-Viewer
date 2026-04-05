@@ -28,7 +28,6 @@
 		"build": "wxt build",
 		"build:coverage": "E2E_COVERAGE=1 wxt build",
 		"build:firefox": "wxt build -b firefox",
-		"compile": "tsc --noEmit",
 		"coverage:all": "bun run test:coverage && bun run test:e2e:coverage && bun run coverage:merge",
 		"coverage:merge": "bun scripts/merge-coverage.ts",
 		"dev": "wxt",
@@ -38,6 +37,7 @@
 		"lint": "biome check",
 		"lint:fix": "biome check --write",
 		"postinstall": "wxt prepare",
+		"prepare": "simple-git-hooks",
 		"pretest:e2e": "playwright install chromium",
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage",
@@ -68,9 +68,17 @@
 		"istanbul-lib-report": "^3.0.1",
 		"istanbul-reports": "^3.2.0",
 		"knip": "^6.3.0",
+		"lint-staged": "^16.4.0",
 		"monocart-reporter": "^2.10.0",
+		"simple-git-hooks": "^2.13.1",
 		"typescript": "^5.9.3",
 		"vitest": "^4.1.2",
 		"wxt": "^0.20.20"
+	},
+	"simple-git-hooks": {
+		"pre-commit": "bunx lint-staged"
+	},
+	"lint-staged": {
+		"*": "biome check --write --no-errors-on-unmatched"
 	}
 }

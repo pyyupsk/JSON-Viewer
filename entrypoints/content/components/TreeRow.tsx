@@ -1,3 +1,4 @@
+import { COPY_FEEDBACK_DURATION_MS } from "@content/constants";
 import type { Row } from "@content/lib/flatten";
 import { useState } from "react";
 import {
@@ -40,7 +41,7 @@ export function TreeRow({
 			onCopy(row.value);
 		}
 		setCopied(true);
-		setTimeout(() => setCopied(false), 1200);
+		setTimeout(() => setCopied(false), COPY_FEEDBACK_DURATION_MS);
 	};
 
 	const cls = [

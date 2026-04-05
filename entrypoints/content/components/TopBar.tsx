@@ -1,7 +1,6 @@
+import type { Tab } from "@content/types";
 import logoUrl from "~/assets/logo.png";
 import { CollapseIcon, CopyIcon, ExpandIcon } from "./Icons";
-
-type Tab = "tree" | "raw" | "minify" | "jq" | "ts";
 
 interface TopBarProps {
 	tab: Tab;
