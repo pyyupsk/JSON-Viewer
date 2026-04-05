@@ -13,6 +13,10 @@ on:
           - minor
           - major
 
+concurrency:
+  group: bump-${{ github.repository }}-${{ inputs.bump }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
