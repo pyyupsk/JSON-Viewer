@@ -64,9 +64,9 @@ jobs:
         run: |
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           if [ -n "$PREV_TAG" ]; then
-            bunx changelogen --output CHANGELOG.tmp.md --from "$PREV_TAG" --to HEAD^ --release "$VERSION"
+            bunx changelogen --output CHANGELOG.tmp.md --from "$PREV_TAG" --to HEAD^ --release "$VERSION" --no-github
           else
-            bunx changelogen --output CHANGELOG.tmp.md --to HEAD^ --release "$VERSION"
+            bunx changelogen --output CHANGELOG.tmp.md --to HEAD^ --release "$VERSION" --no-github
           fi
           sed -i '/^## v/d' CHANGELOG.tmp.md
 
