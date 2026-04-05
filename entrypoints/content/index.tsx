@@ -50,6 +50,9 @@ export default defineContentScript({
 		document.head.appendChild(style);
 
 		// Take over the page — remove all existing content and mount our viewer
+		// opacity:0 here is a defensive guard: keeps the page hidden during DOM
+		// manipulation in case the mightBeJson check above is ever narrowed and
+		// the initial opacity:0 is no longer set before detectJson() runs.
 		document.documentElement.style.cssText = "height:100%; opacity:0;";
 		document.body.replaceChildren();
 		document.body.style.cssText =
