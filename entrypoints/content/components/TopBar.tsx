@@ -1,3 +1,4 @@
+import logoUrl from "~/assets/logo.png";
 import { CollapseIcon, CopyIcon, ExpandIcon } from "./Icons";
 
 type Tab = "tree" | "raw" | "minify" | "jq" | "ts";
@@ -19,7 +20,10 @@ export function TopBar({
 }: Readonly<TopBarProps>) {
 	return (
 		<div className="topbar">
-			<span className="logo">{"{ }"} json</span>
+			<span className="logo">
+				<img src={logoUrl} alt="" aria-hidden="true" width={20} height={20} />{" "}
+				JSON Viewer
+			</span>
 			<div className="sep" />
 			<div className="tab-group">
 				<button
