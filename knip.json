@@ -4,6 +4,7 @@
 	"ignoreDependencies": [
 		"@fontsource/geist",
 		"@fontsource/jetbrains-mono",
-		"@wxt-dev/module-react"
+		"@wxt-dev/module-react",
+		"simple-git-hooks"
 	]
 }
