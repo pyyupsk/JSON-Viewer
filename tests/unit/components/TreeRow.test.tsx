@@ -1,7 +1,7 @@
 import { TreeRow } from "@content/components/TreeRow";
 import type { Row } from "@content/lib/flatten";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const baseProps = {
 	lineNum: 1,
@@ -204,5 +204,28 @@ describe("TreeRow", () => {
 		const pill = document.querySelector(".pill") as HTMLButtonElement;
 		fireEvent.click(pill);
 		expect(onToggle).toHaveBeenCalledWith("root");
+	});
+
+	describe("copy timeout cleanup", () => {
+		beforeEach(() => {
+			vi.useFakeTimers();
+		});
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
+		it("clears copy feedback timeout on unmount", async () => {
+			const { unmount } = render(<TreeRow {...baseProps} row={primString} />);
+			const copyBtn = document.querySelector(".copy-btn") as HTMLButtonElement;
+			await act(async () => {
+				fireEvent.click(copyBtn);
+			});
+			expect(copyBtn.className).toContain("ok");
+			unmount();
+			// Advancing timers after unmount should not throw
+			await act(async () => {
+				vi.advanceTimersByTime(2000);
+			});
+		});
 	});
 });

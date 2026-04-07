@@ -1,6 +1,6 @@
 import { COPY_FEEDBACK_DURATION_MS } from "@content/constants";
 import type { Row } from "@content/lib/flatten";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
 	CollapseNodeIcon,
 	CopiedIcon,
@@ -30,6 +30,13 @@ export function TreeRow({
 	onCopy,
 }: Readonly<TreeRowProps>) {
 	const [copied, setCopied] = useState(false);
+	const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	useEffect(() => {
+		return () => {
+			if (copyTimer.current) clearTimeout(copyTimer.current);
+		};
+	}, []);
 
 	// For close rows, clicking selects the opening node
 	const openPath =
@@ -41,7 +48,11 @@ export function TreeRow({
 			onCopy(row.value);
 		}
 		setCopied(true);
-		setTimeout(() => setCopied(false), COPY_FEEDBACK_DURATION_MS);
+		if (copyTimer.current) clearTimeout(copyTimer.current);
+		copyTimer.current = setTimeout(
+			() => setCopied(false),
+			COPY_FEEDBACK_DURATION_MS,
+		);
 	};
 
 	const cls = [

@@ -11,7 +11,8 @@ function evalLength(data: unknown): number {
 
 function evalFromEntries(data: unknown): Record<string, unknown> {
 	const o: Record<string, unknown> = {};
-	for (const e of (data ?? []) as Array<{
+	if (!Array.isArray(data)) return o;
+	for (const e of data as Array<{
 		key?: string;
 		name?: string;
 		value: unknown;
@@ -31,7 +32,10 @@ function evalAdd(data: unknown): unknown {
 		if (Array.isArray(a) && Array.isArray(b))
 			return (a as unknown[]).concat(b as unknown[]);
 		if (typeof a === "object" && a && typeof b === "object" && b)
-			return Object.assign(a, b);
+			return {
+				...(a as Record<string, unknown>),
+				...(b as Record<string, unknown>),
+			};
 		return b;
 	}, first);
 }
@@ -100,7 +104,8 @@ function evalCond(expr: string, data: unknown): boolean {
 	if (cmp) {
 		const lv = run(cmp[1].trim(), data);
 		let rv: unknown = cmp[3].trim();
-		if ((rv as string).startsWith('"')) rv = (rv as string).slice(1, -1);
+		if ((rv as string).startsWith(".")) rv = run(rv as string, data);
+		else if ((rv as string).startsWith('"')) rv = (rv as string).slice(1, -1);
 		else if (rv === "true") rv = true;
 		else if (rv === "false") rv = false;
 		else if (rv === "null") rv = null;
@@ -202,8 +207,14 @@ function evalFuncExpr(expr: string, data: unknown): unknown {
 		return v ? data : undefined;
 	}
 
-	const hasM = /^has\("(.+)"\)$/.exec(expr);
-	if (hasM) return Object.hasOwn(data ?? {}, hasM[1]);
+	const hasStrM = /^has\("(.+)"\)$/.exec(expr);
+	if (hasStrM) return Object.hasOwn(data ?? {}, hasStrM[1]);
+
+	const hasNumM = /^has\((\d+)\)$/.exec(expr);
+	if (hasNumM) {
+		const idx = Number(hasNumM[1]);
+		return Array.isArray(data) && idx >= 0 && idx < data.length;
+	}
 
 	const mapM = /^map\((.+)\)$/.exec(expr);
 	if (mapM) {

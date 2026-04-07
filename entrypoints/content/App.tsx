@@ -11,7 +11,7 @@ import { TypeScriptView } from "@content/components/TypeScriptView";
 import { useJqFilter } from "@content/hooks/useJqFilter";
 import { useSearch } from "@content/hooks/useSearch";
 import { useToast } from "@content/hooks/useToast";
-import { flattenData } from "@content/lib/flatten";
+import { collectObjectPaths, flattenData } from "@content/lib/flatten";
 import { nameFromUrl } from "@content/lib/typescript";
 import type { Tab } from "@content/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -116,26 +116,7 @@ export function App({ rawJson }: AppProps) {
 	}, []);
 
 	const handleCollapseAll = useCallback(() => {
-		const paths = new Set<string>();
-		function walk(val: unknown, path: string) {
-			if (val !== null && typeof val === "object") {
-				paths.add(path);
-				const isArr = Array.isArray(val);
-				const keys = isArr
-					? (val as unknown[]).map((_, i) => String(i))
-					: Object.keys(val as Record<string, unknown>);
-				for (const k of keys) {
-					walk(
-						isArr
-							? (val as unknown[])[Number(k)]
-							: (val as Record<string, unknown>)[k],
-						isArr ? `${path}[${k}]` : `${path}.${k}`,
-					);
-				}
-			}
-		}
-		if (data !== null) walk(data, "root");
-		setCollapsed(paths);
+		setCollapsed(data === null ? new Set() : collectObjectPaths(data));
 	}, [data]);
 
 	const handleExpandAll = useCallback(() => setCollapsed(new Set()), []);

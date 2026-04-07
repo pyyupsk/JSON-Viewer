@@ -3,9 +3,13 @@ import { App } from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import styles from "./style.css?inline";
 
+const MAX_SIZE = 5_000_000;
+
 async function detectJson(): Promise<string | null> {
-	if (document.contentType === "application/json")
-		return document.body.innerText;
+	if (document.contentType === "application/json") {
+		const raw = document.body.innerText;
+		return raw.length > MAX_SIZE ? null : raw;
+	}
 
 	if (
 		document.contentType !== "text/plain" &&
@@ -14,7 +18,7 @@ async function detectJson(): Promise<string | null> {
 		return null;
 
 	const raw = document.body?.innerText ?? "";
-	if (raw.length > 5_000_000) return null;
+	if (raw.length > MAX_SIZE) return null;
 
 	const trimmed = raw.trimStart();
 	if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return null;
@@ -33,11 +37,10 @@ export default defineContentScript({
 	runAt: "document_start",
 
 	async main() {
-		const mightBeJson =
+		const likelyJson =
 			document.contentType === "application/json" ||
-			document.contentType === "text/plain" ||
-			document.contentType === "text/html";
-		if (mightBeJson) document.documentElement.style.opacity = "0";
+			document.contentType === "text/plain";
+		if (likelyJson) document.documentElement.style.opacity = "0";
 
 		if (document.readyState === "loading") {
 			await new Promise<void>((resolve) =>
@@ -50,7 +53,7 @@ export default defineContentScript({
 		const raw = await detectJson();
 
 		if (!raw) {
-			if (mightBeJson) document.documentElement.style.opacity = "1";
+			if (likelyJson) document.documentElement.style.opacity = "1";
 			return;
 		}
 
@@ -61,7 +64,7 @@ export default defineContentScript({
 
 		// Take over the page — remove all existing content and mount our viewer
 		// opacity:0 here is a defensive guard: keeps the page hidden during DOM
-		// manipulation in case the mightBeJson check above is ever narrowed and
+		// manipulation in case the likelyJson check above is ever narrowed and
 		// the initial opacity:0 is no longer set before detectJson() runs.
 		document.documentElement.style.cssText = "height:100%; opacity:0;";
 		document.body.replaceChildren();
