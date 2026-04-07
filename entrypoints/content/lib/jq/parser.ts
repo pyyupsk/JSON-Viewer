@@ -16,11 +16,13 @@ function updateKwDepth(
 ): number {
 	if (depth !== 0) return kwDepth;
 	const isIfStart =
-		expr.slice(i, i + 3) === "if " && (i === 0 || /[\s|,(]/.test(expr[i - 1]));
+		expr.slice(i, i + 2) === "if" &&
+		/\s/.test(expr[i + 2] ?? "") &&
+		(i === 0 || /[\s|,(:]/.test(expr[i - 1]));
 	if (isIfStart) return kwDepth + 1;
 	const isEnd =
 		expr.slice(i, i + 3) === "end" &&
-		(i === 0 || /[\s|,(]/.test(expr[i - 1])) &&
+		(i === 0 || /[\s|,(:]/.test(expr[i - 1])) &&
 		(i + 3 >= expr.length || /[\s|,)]/.test(expr[i + 3]));
 	if (isEnd) return Math.max(0, kwDepth - 1);
 	return kwDepth;

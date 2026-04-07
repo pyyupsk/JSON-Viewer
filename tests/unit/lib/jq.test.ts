@@ -357,6 +357,18 @@ describe("jq", () => {
 				10, 20,
 			]);
 		});
+		it("does not split comma when 'end' appears inside a key like .friend", () => {
+			const data = { ok: true, friend: "bob", other: "alice" };
+			expect(run("if .ok then .friend, .other else .ok end", data)).toEqual([
+				"bob",
+				"alice",
+			]);
+		});
+		it("recognises if followed by tab", () => {
+			// if<tab>condition should still increment kwDepth
+			const data = { x: 1, a: 10, b: 20 };
+			expect(run("if\t.x > 0 then .a, .b else .x end", data)).toEqual([10, 20]);
+		});
 	});
 });
 

@@ -1,4 +1,5 @@
 import { TreeRow } from "@content/components/TreeRow";
+import { COPY_FEEDBACK_DURATION_MS } from "@content/constants";
 import type { Row } from "@content/lib/flatten";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -221,10 +222,11 @@ describe("TreeRow", () => {
 				fireEvent.click(copyBtn);
 			});
 			expect(copyBtn.className).toContain("ok");
+			expect(vi.getTimerCount()).toBeGreaterThan(0);
 			unmount();
-			// Advancing timers after unmount should not throw
+			expect(vi.getTimerCount()).toBe(0);
 			await act(async () => {
-				vi.advanceTimersByTime(2000);
+				vi.advanceTimersByTime(COPY_FEEDBACK_DURATION_MS);
 			});
 		});
 	});

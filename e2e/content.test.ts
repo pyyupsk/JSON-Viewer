@@ -74,5 +74,6 @@ test("collapse and expand all", async ({ page }) => {
 
 test("does not activate on normal HTML pages", async ({ page }) => {
 	await page.goto("https://example.com");
+	await page.waitForLoadState("domcontentloaded");
 	await expect(page.locator(".app")).toHaveCount(0);
 });
