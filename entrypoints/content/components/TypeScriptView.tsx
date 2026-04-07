@@ -1,5 +1,5 @@
 import { jsonToTs } from "@content/lib/typescript";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 interface TypeScriptViewProps {
 	data: unknown;
@@ -8,7 +8,10 @@ interface TypeScriptViewProps {
 
 export function TypeScriptView({ data, name }: Readonly<TypeScriptViewProps>) {
 	const [inline, setInline] = useState(false);
-	const output = jsonToTs(data, name, inline);
+	const output = useMemo(
+		() => jsonToTs(data, name, inline),
+		[data, name, inline],
+	);
 
 	return (
 		<div className="ts-view">

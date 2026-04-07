@@ -1,5 +1,6 @@
 import {
 	type CloseRow,
+	collectObjectPaths,
 	flattenData,
 	type OpenRow,
 	type PrimRow,
@@ -77,6 +78,31 @@ describe("flattenData", () => {
 		expect(rows[0].depth).toBe(0); // root open
 		expect(rows[1].depth).toBe(1); // nested open
 		expect(rows[2].depth).toBe(2); // prim b
+	});
+});
+
+describe("collectObjectPaths", () => {
+	it("returns empty set for primitive", () => {
+		expect(collectObjectPaths(42).size).toBe(0);
+	});
+
+	it("returns empty set for null", () => {
+		expect(collectObjectPaths(null).size).toBe(0);
+	});
+
+	it("collects root and nested object paths", () => {
+		const paths = collectObjectPaths({ a: { b: 1 }, c: [1, 2] });
+		expect(paths.has("root")).toBe(true);
+		expect(paths.has("root.a")).toBe(true);
+		expect(paths.has("root.c")).toBe(true);
+		expect(paths.has("root.a.b")).toBe(false); // b is a primitive
+	});
+
+	it("collects array index paths for nested objects", () => {
+		const paths = collectObjectPaths([{ x: 1 }, { y: 2 }]);
+		expect(paths.has("root")).toBe(true);
+		expect(paths.has("root[0]")).toBe(true);
+		expect(paths.has("root[1]")).toBe(true);
 	});
 });
 

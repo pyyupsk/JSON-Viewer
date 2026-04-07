@@ -98,6 +98,42 @@ function walk(
 	}
 }
 
+// ── collectObjectPaths ────────────────────────────────────────────────────────
+// Iteratively collects all paths to objects/arrays in the JSON tree.
+
+function pushChildren(
+	val: Record<string, unknown> | unknown[],
+	path: string,
+	stack: Array<{ val: unknown; path: string }>,
+): void {
+	const isArr = Array.isArray(val);
+	const keys = isArr ? val.map((_, i) => String(i)) : Object.keys(val);
+	for (const k of keys) {
+		const childVal = isArr ? val[Number(k)] : val[k];
+		stack.push({
+			val: childVal,
+			path: isArr ? `${path}[${k}]` : `${path}.${k}`,
+		});
+	}
+}
+
+export function collectObjectPaths(data: unknown): Set<string> {
+	const paths = new Set<string>();
+	if (data === null || typeof data !== "object") return paths;
+	const stack: Array<{ val: unknown; path: string }> = [
+		{ val: data, path: "root" },
+	];
+	while (stack.length > 0) {
+		const item = stack.pop();
+		if (!item) break;
+		const { val, path } = item;
+		if (val === null || typeof val !== "object") continue;
+		paths.add(path);
+		pushChildren(val as Record<string, unknown> | unknown[], path, stack);
+	}
+	return paths;
+}
+
 // ── rowSearchText ─────────────────────────────────────────────────────────────
 // Returns the text that should be matched against the search query for a row.
 

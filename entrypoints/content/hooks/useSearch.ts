@@ -37,15 +37,6 @@ export function useSearch(rows: Row[]): {
 		setMatchIdx(matches.length > 0 ? 0 : -1);
 	}, [matches]);
 
-	useEffect(() => {
-		if (focusPath) {
-			document.querySelector(".row.hit-focus")?.scrollIntoView({
-				block: "center",
-				behavior: "smooth",
-			});
-		}
-	}, [focusPath]);
-
 	const stepMatch = useCallback(
 		(dir: 1 | -1) => {
 			if (!matches.length) return;

@@ -1,4 +1,5 @@
 import { jq, suggest } from "@content/lib/jq";
+import { isUnescapedQuote } from "@content/lib/jq/parser";
 import { describe, expect, it } from "vitest";
 
 const run = jq.run.bind(jq);
@@ -162,6 +163,14 @@ describe("jq", () => {
 		it("add merges objects", () => {
 			expect(run("add", [{ a: 1 }, { b: 2 }])).toEqual({ a: 1, b: 2 });
 		});
+		it("add does not mutate input objects", () => {
+			const first = { a: 1 };
+			const second = { b: 2 };
+			const input = [first, second];
+			run("add", input);
+			expect(first).toEqual({ a: 1 });
+			expect(second).toEqual({ b: 2 });
+		});
 		it("add concatenates arrays", () => {
 			expect(
 				run("add", [
@@ -189,6 +198,11 @@ describe("jq", () => {
 		it("from_entries uses name key as fallback", () => {
 			expect(run("from_entries", [{ name: "a", value: 1 }])).toEqual({ a: 1 });
 		});
+		it("from_entries returns empty object for non-array input", () => {
+			expect(run("from_entries", "not an array")).toEqual({});
+			expect(run("from_entries", 42)).toEqual({});
+			expect(run("from_entries", null)).toEqual({});
+		});
 	});
 
 	// ── Functions ────────────────────────────────────────────────────────────────
@@ -205,6 +219,10 @@ describe("jq", () => {
 		it("has checks key existence", () => {
 			expect(run('has("a")', { a: 1 })).toBe(true);
 			expect(run('has("b")', { a: 1 })).toBe(false);
+		});
+		it("has checks array index existence", () => {
+			expect(run("has(0)", [10, 20, 30])).toBe(true);
+			expect(run("has(5)", [10, 20, 30])).toBe(false);
 		});
 		it("if-then-else", () => {
 			expect(run("if .x > 0 then .x else 0 end", { x: 5 })).toBe(5);
@@ -302,6 +320,13 @@ describe("jq", () => {
 		it("!= comparison with numeric rv", () => {
 			expect(run("select(. != 42)", 1)).toBe(1);
 		});
+		it("compares two path expressions (.a > .b)", () => {
+			expect(run("select(.a > .b)", { a: 10, b: 5 })).toEqual({
+				a: 10,
+				b: 5,
+			});
+			expect(run("select(.a > .b)", { a: 1, b: 5 })).toBeUndefined();
+		});
 	});
 
 	// ── Comma / multi-output ────────────────────────────────────────────────────
@@ -310,6 +335,61 @@ describe("jq", () => {
 		it("comma produces multiple values as array", () => {
 			expect(run(".a, .b", { a: 1, b: 2 })).toEqual([1, 2]);
 		});
+	});
+
+	// ── if/then/else with commas ────────────────────────────────────────────────
+
+	describe("if/then/else with inner commas", () => {
+		it("does not split comma inside if/then/else/end", () => {
+			const data = { x: 5, a: 10, b: 20 };
+			expect(run("if .x > 0 then .a, .b else .x end", data)).toEqual([10, 20]);
+		});
+		it("pipe containing if/then/else with comma", () => {
+			const data = { x: 3, a: 1, b: 2 };
+			expect(run(". | if .x > 0 then .a, .b else .x end", data)).toEqual([
+				1, 2,
+			]);
+		});
+		it("does not treat identifier ending in 'end' as keyword boundary", () => {
+			// .weekend contains 'end' but should not decrement kwDepth
+			const data = { x: 1, a: 10, b: 20, weekend: "sat" };
+			expect(run("if .x > 0 then .a, .b else .weekend end", data)).toEqual([
+				10, 20,
+			]);
+		});
+		it("does not split comma when 'end' appears inside a key like .friend", () => {
+			const data = { ok: true, friend: "bob", other: "alice" };
+			expect(run("if .ok then .friend, .other else .ok end", data)).toEqual([
+				"bob",
+				"alice",
+			]);
+		});
+		it("recognises if followed by tab", () => {
+			// if<tab>condition should still increment kwDepth
+			const data = { x: 1, a: 10, b: 20 };
+			expect(run("if\t.x > 0 then .a, .b else .x end", data)).toEqual([10, 20]);
+		});
+	});
+});
+
+describe("isUnescapedQuote", () => {
+	it("returns true for a plain quote", () => {
+		expect(isUnescapedQuote('"hello"', 0)).toBe(true);
+		expect(isUnescapedQuote('"hello"', 6)).toBe(true);
+	});
+
+	it("returns false for a single-backslash-escaped quote", () => {
+		// String.raw`say \"hi\"` → s a y   \ " h i \ " — index 5 is the escaped "
+		expect(isUnescapedQuote(String.raw`say \"hi\"`, 5)).toBe(false);
+	});
+
+	it("returns true for a double-backslash-preceded quote (escaped backslash, not quote)", () => {
+		// String.raw`a\\"b` → a \ \ " b — index 3 is " preceded by \\
+		expect(isUnescapedQuote(String.raw`a\\"b`, 3)).toBe(true);
+	});
+
+	it("returns true at start of string", () => {
+		expect(isUnescapedQuote('"', 0)).toBe(true);
 	});
 });
 
