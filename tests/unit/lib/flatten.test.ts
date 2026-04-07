@@ -4,7 +4,6 @@ import {
 	flattenData,
 	type OpenRow,
 	type PrimRow,
-	pushChildren,
 	rowSearchText,
 } from "@content/lib/flatten";
 import { describe, expect, it } from "vitest";
@@ -79,44 +78,6 @@ describe("flattenData", () => {
 		expect(rows[0].depth).toBe(0); // root open
 		expect(rows[1].depth).toBe(1); // nested open
 		expect(rows[2].depth).toBe(2); // prim b
-	});
-});
-
-describe("pushChildren", () => {
-	it("pushes object children with dot-notation paths", () => {
-		const stack: Array<{ val: unknown; path: string }> = [];
-		pushChildren({ a: 1, b: "x" }, "root", stack);
-		expect(stack).toEqual([
-			{ val: 1, path: "root.a" },
-			{ val: "x", path: "root.b" },
-		]);
-	});
-
-	it("pushes array children with bracket-notation paths", () => {
-		const stack: Array<{ val: unknown; path: string }> = [];
-		pushChildren([10, 20], "root", stack);
-		expect(stack).toEqual([
-			{ val: 10, path: "root[0]" },
-			{ val: 20, path: "root[1]" },
-		]);
-	});
-
-	it("pushes nothing for empty object", () => {
-		const stack: Array<{ val: unknown; path: string }> = [];
-		pushChildren({}, "root", stack);
-		expect(stack).toEqual([]);
-	});
-
-	it("pushes nothing for empty array", () => {
-		const stack: Array<{ val: unknown; path: string }> = [];
-		pushChildren([], "root", stack);
-		expect(stack).toEqual([]);
-	});
-
-	it("handles nested objects as values", () => {
-		const stack: Array<{ val: unknown; path: string }> = [];
-		pushChildren({ a: { b: 1 } }, "root", stack);
-		expect(stack).toEqual([{ val: { b: 1 }, path: "root.a" }]);
 	});
 });
 

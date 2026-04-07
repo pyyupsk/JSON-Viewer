@@ -20,6 +20,7 @@ function updateKwDepth(
 	if (isIfStart) return kwDepth + 1;
 	const isEnd =
 		expr.slice(i, i + 3) === "end" &&
+		(i === 0 || /[\s|,(]/.test(expr[i - 1])) &&
 		(i + 3 >= expr.length || /[\s|,)]/.test(expr[i + 3]));
 	if (isEnd) return Math.max(0, kwDepth - 1);
 	return kwDepth;

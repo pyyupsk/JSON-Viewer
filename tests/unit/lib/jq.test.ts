@@ -350,6 +350,13 @@ describe("jq", () => {
 				1, 2,
 			]);
 		});
+		it("does not treat identifier ending in 'end' as keyword boundary", () => {
+			// .weekend contains 'end' but should not decrement kwDepth
+			const data = { x: 1, a: 10, b: 20, weekend: "sat" };
+			expect(run("if .x > 0 then .a, .b else .weekend end", data)).toEqual([
+				10, 20,
+			]);
+		});
 	});
 });
 

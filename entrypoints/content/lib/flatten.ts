@@ -101,7 +101,7 @@ function walk(
 // ── collectObjectPaths ────────────────────────────────────────────────────────
 // Iteratively collects all paths to objects/arrays in the JSON tree.
 
-export function pushChildren(
+function pushChildren(
 	val: Record<string, unknown> | unknown[],
 	path: string,
 	stack: Array<{ val: unknown; path: string }>,
